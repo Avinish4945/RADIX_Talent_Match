@@ -1,0 +1,28 @@
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python virtual environment
+backend/venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded JD documents
+backend/uploads/
+
+# Python testing
+.pytest_cache/
+.mypy_cache/
+
+# Editors and operating system
+.vscode/
+.idea/
+.DS_Store

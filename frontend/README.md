@@ -1,0 +1,112 @@
+# Radix Talent Match
+
+A front-end-only career profile and job-matching app built with React, React Router's data router APIs, and Redux Toolkit. The app uses local demo data and browser storage until backend services are connected.
+
+## Four-layer architecture
+
+```text
+src/
+├── presentation/       # React UI, routes, layouts, and styles
+├── application/        # App state and user-facing use cases
+├── domain/             # Core profile rules and defaults
+└── infrastructure/     # Browser storage, repositories, and demo data
+```
+
+### Layer responsibilities
+
+- **Presentation**: renders UI and handles user input. Routes call application services; components dispatch application actions.
+- **Application**: coordinates app behavior and Redux state. It depends on domain rules and receives infrastructure adapters at startup.
+- **Domain**: contains business concepts and rules without React, Redux, browser APIs, or network dependencies.
+- **Infrastructure**: implements external adapters such as browser storage and demo repositories. Replace these with API-backed adapters when connecting a backend.
+
+The startup module in `presentation/main.jsx` is the composition root: it creates infrastructure adapters and injects them into application services and the Redux store. Keep dependencies flowing inward by passing adapters into application factories rather than importing browser APIs into domain or application code.
+
+### Current source map
+
+```text
+src/
+├── application/
+│   ├── session/sessionService.js
+│   └── store/
+│       ├── appSlice.js
+│       ├── configureStore.js
+│       └── persistenceMiddleware.js
+├── domain/
+│   └── profile/profileDefaults.js
+├── infrastructure/
+│   ├── api/apiClient.js
+│   ├── demo/demoData.js
+│   ├── repositories/sessionRepository.js
+│   └── storage/browserStorage.js
+└── presentation/
+    ├── components/shared/PagePrimitives.jsx
+    ├── layouts/AppShell.jsx
+    ├── main.jsx
+    ├── pages/
+    │   ├── auth/AuthPage.jsx
+    │   └── workspace/
+    │       ├── dashboard/Dashboard.jsx
+    │       ├── job-analytics/JobAnalytics.jsx
+    │       ├── profile-builder/ProfileBuilder.jsx
+    │       ├── resume-parsing/ResumeParsing.jsx
+    │       ├── skill-matching/SkillMatching.jsx
+    │       └── talent-check/TalentCheck.jsx
+    ├── routes/router.jsx
+    └── styles/styles.css
+```
+
+## Adding a feature
+
+1. Add domain rules or entities in `src/domain/<feature>/` only when they represent core business behavior.
+2. Add feature state/actions in `src/application/store/` or an application service in `src/application/<feature>/`.
+3. Add API, storage, or demo implementations in `src/infrastructure/`; inject them from `presentation/main.jsx`.
+4. Add the page under `src/presentation/pages/<feature>/`, then register its route in `src/presentation/routes/router.jsx`.
+5. Keep reusable layout and visual primitives in `src/presentation/layouts/` and `src/presentation/components/`.
+
+## Run locally
+
+```sh
+npm install
+npm run dev
+```
+
+Use any valid email address and a password with at least six characters to enter demo mode. The demo session and profile are stored in browser local storage.
+
+## Routes
+
+- `/login`, `/signup` — demo authentication
+- `/dashboard` — career overview
+- `/analytics` — job description analysis UI
+- `/resume` — resume upload and simulated extraction UI
+- `/profile` — editable profile, skills, projects, experience, and certifications
+- `/talent-check` — readiness score UI
+- `/matching` — skill-based job matches
+
+The application routes use React Router data loaders. The analytics, resume parsing, talent check, and matching results are currently UI simulations; replace the relevant demo implementations with backend services when those are available.
+
+### Calling the API
+
+Set `VITE_API_BASE_URL` in a local `.env` file to your backend's API root (for example, `VITE_API_BASE_URL=https://localhost:5001/api`). Requests default to `/api` when it is not set.
+
+Import `apiRequest` from `src/infrastructure/api/apiClient.js` in an application service, then call it with the endpoint path:
+
+```js
+import { apiRequest } from "../../infrastructure/api/apiClient";
+
+export function getProfile() {
+  return apiRequest("/profile");
+}
+
+export function saveProfile(profile) {
+  return apiRequest("/profile", { method: "PUT", body: profile });
+}
+```
+
+The helper sends and receives JSON, accepts standard `fetch` options such as `signal` and `headers`, returns `null` for `204 No Content`, and throws an error for non-success responses. Keep endpoint-specific functions in `src/application/<feature>/` or `src/infrastructure/` instead of making network calls directly from JSX.
+
+## Scripts
+
+- `npm run dev` — start the development server
+- `npm run build` — create a production build
+- `npm run format` — format source files
+- `npm run format:check` — verify source formatting
