@@ -26,3 +26,8 @@ backend/uploads/
 .vscode/
 .idea/
 .DS_Store
+
+# RADIX project data and generated artifacts
+/data/*
+!/data/README.md
+!/data/*.example

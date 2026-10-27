@@ -38,7 +38,11 @@ def save_jd_analysis(analysis: dict, source_file: str) -> dict:
     if not response.data:
         raise RuntimeError("Failed to save JD analysis to Supabase")
 
-    return response.data[0]
+    saved_record = response.data[0]
+    if not isinstance(saved_record, dict):
+        raise RuntimeError("Supabase returned an invalid JD analysis record")
+
+    return saved_record
 
 
 @router.get("/")
@@ -56,7 +60,7 @@ async def upload_jd(file: UploadFile = File(...)):
             detail="Only PDF and DOCX files are allowed"
         )
 
-    saved_name = f"{uuid4().hex}{extension}"
+    saved_name = f"{uuid.uuid4().hex}{extension}"
     saved_path = UPLOAD_DIR / saved_name
     size = 0
 
@@ -104,7 +108,7 @@ async def extract_jd_text(file: UploadFile = File(...)):
         )
 
     # Reuse your existing local-storage logic
-    saved_name = f"{uuid4().hex}{extension}"
+    saved_name = f"{uuid.uuid4().hex}{extension}"
     saved_path = UPLOAD_DIR / saved_name
     size = 0
 
