@@ -1746,6 +1746,64 @@ kbd {
   outline: none;
   font-size: 10px;
 }
+.talent-select-label {
+  display: grid;
+  gap: 4px;
+  color: #8b97a7;
+  font-size: 8px;
+}
+.talent-select-label select {
+  min-width: 145px;
+}
+.check-control-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.talent-alert {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid #f1caca;
+  border-radius: 7px;
+  color: #a6444e;
+  background: #fff6f6;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.talent-alert p {
+  margin: 0;
+}
+.talent-alert p + p {
+  margin-top: 5px;
+}
+.talent-loading {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid #dfe8f5;
+  border-radius: 7px;
+  color: #476789;
+  background: #f7faff;
+  font-size: 10px;
+}
+.talent-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 36px 20px;
+  color: #8491a3;
+  text-align: center;
+}
+.talent-empty-state svg {
+  color: #7669ce;
+}
+.talent-empty-state b {
+  color: #43536a;
+  font-size: 12px;
+}
+.talent-empty-state span {
+  max-width: 410px;
+  font-size: 9px;
+  line-height: 1.6;
+}
 .readiness-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.7fr);
@@ -1789,6 +1847,45 @@ kbd {
   color: #8894a5;
   font-size: 9px;
   line-height: 1.65;
+}
+.score-details {
+  flex: 1;
+}
+.score-unavailable {
+  width: 110px;
+  height: 110px;
+  flex: 0 0 110px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border: 9px solid #edf0f5;
+  border-radius: 50%;
+  color: #8793a3;
+}
+.score-unavailable b {
+  font-size: 30px;
+  line-height: 1;
+}
+.score-unavailable small {
+  margin-top: 4px;
+  font-size: 8px;
+}
+.score-metrics {
+  display: flex;
+  gap: 22px;
+  margin-top: 12px;
+}
+.score-metrics > div {
+  display: grid;
+  gap: 3px;
+}
+.score-metrics span {
+  color: #8b96a5;
+  font-size: 8px;
+}
+.score-metrics b {
+  color: #405169;
+  font-size: 11px;
 }
 .score-caption {
   display: flex;
@@ -1872,6 +1969,16 @@ kbd {
 .status-word.gap {
   background: #fff0f0;
   color: #cf626b;
+}
+.status-word.unknown {
+  background: #f0f2f5;
+  color: #778395;
+}
+.assessment-note {
+  margin: 0;
+  color: #8894a5;
+  font-size: 9px;
+  line-height: 1.6;
 }
 .improve-panel .panel-heading {
   align-items: flex-start;
@@ -2591,6 +2698,10 @@ kbd {
   .matching-control-actions select {
     min-width: 0;
     width: 100%;
+  }
+  .check-control-actions .button {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
   .score-overview {
     padding: 12px;

@@ -79,14 +79,16 @@ Use any valid email address and a password with at least six characters to enter
 - `/analytics` — job description analysis UI
 - `/resume` — resume upload and simulated extraction UI
 - `/profile` — editable profile, skills, projects, experience, and certifications
-- `/talent-check` — readiness score UI
+- `/talent-check` — backend-backed readiness assessment
 - `/matching` — skill-based job matches
 
-The application routes use React Router data loaders. The analytics, resume parsing, talent check, and matching results are currently UI simulations; replace the relevant demo implementations with backend services when those are available.
+The application routes use React Router data loaders. Talent Check uses the FastAPI backend to load configured companies and candidates, submit assessments, and display readiness, coverage, skill gaps, and unknown levels. Analytics, resume parsing, and matching remain UI simulations.
 
 ### Calling the API
 
-Set `VITE_API_BASE_URL` in a local `.env` file to your backend's API root (for example, `VITE_API_BASE_URL=https://localhost:5001/api`). Requests default to `/api` when it is not set.
+Requests default to `/api`. The Vite development server proxies `/api` to `http://127.0.0.1:8000`, so start the FastAPI backend from `backend/` with `python -m uvicorn app.main:app --reload` before running the frontend.
+
+To use a different backend, set `VITE_API_BASE_URL` in a local `.env` file to its API root (for example, `VITE_API_BASE_URL=https://localhost:5001/api`).
 
 Import `apiRequest` from `src/infrastructure/api/apiClient.js` in an application service, then call it with the endpoint path:
 

@@ -31,9 +31,14 @@ export async function apiRequest(
 
   if (!response.ok) {
     const responseMessage = await response.text();
-    throw new Error(
-      `API request failed (${response.status}): ${responseMessage || response.statusText}`,
-    );
+    let detail = responseMessage || response.statusText;
+    try {
+      const errorPayload = JSON.parse(responseMessage);
+      detail = errorPayload.detail || errorPayload.message || detail;
+    } catch {
+      // Keep plain-text API errors readable.
+    }
+    throw new Error(`API request failed (${response.status}): ${detail}`);
   }
 
   if (response.status === 204) return null;

@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import {
-  Activity,
   ArrowRight,
   Lightbulb,
   ShieldCheck,
   Sparkles,
   Target,
 } from "lucide-react";
+import { apiRequest } from "../../../../infrastructure/api/apiClient";
 import { markReadinessChecked } from "../../../../application/store/appSlice";
 import {
   PageHeading,
@@ -17,21 +17,99 @@ import {
 
 export function TalentCheck() {
   const dispatch = useDispatch();
-  const checked = useSelector((state) => state.app.readinessChecked);
-  const [company, setCompany] = useState("Google");
-  const breakdown = [
-    ["Coding (DSA)", 8, 9],
-    ["Data structures", 7, 8],
-    ["SQL", 8, 6],
-    ["System design", 6, 7],
-    ["Communication", 8, 6],
-  ];
+  const [companies, setCompanies] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [company, setCompany] = useState("");
+  const [candidateId, setCandidateId] = useState("");
+  const [companyError, setCompanyError] = useState("");
+  const [candidateError, setCandidateError] = useState("");
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [checking, setChecking] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOptions() {
+      setOptionsLoading(true);
+      const [companyResponse, candidateResponse] = await Promise.allSettled([
+        apiRequest("/talent-check/companies"),
+        apiRequest("/talent-check/candidates"),
+      ]);
+
+      if (!active) return;
+
+      if (companyResponse.status === "fulfilled") {
+        const availableCompanies = companyResponse.value.companies || [];
+        setCompanies(availableCompanies);
+        setCompany(availableCompanies[0] || "");
+        setCompanyError(
+          availableCompanies.length
+            ? ""
+            : "No official company requirements are configured.",
+        );
+      } else {
+        setCompanyError(companyResponse.reason.message);
+      }
+
+      if (candidateResponse.status === "fulfilled") {
+        const availableCandidates = candidateResponse.value.candidates || [];
+        setCandidates(availableCandidates);
+        setCandidateId(availableCandidates[0]?.id || "");
+        setCandidateError(
+          availableCandidates.length
+            ? ""
+            : "No candidates are available for assessment.",
+        );
+      } else {
+        setCandidateError(candidateResponse.reason.message);
+      }
+
+      setOptionsLoading(false);
+    }
+
+    loadOptions();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function runTalentCheck() {
+    setChecking(true);
+    setApiError("");
+    setResult(null);
+
+    try {
+      const response = await apiRequest("/talent-check/", {
+        method: "POST",
+        body: { candidate_id: candidateId, company },
+      });
+      setResult(response);
+      dispatch(markReadinessChecked());
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  const selectedCandidate = candidates.find(
+    (candidate) => candidate.id === candidateId,
+  );
+  const assessedGaps =
+    result?.skillset_gap.filter(
+      (skill) => skill.status === "assessed" && skill.gap,
+    ) || [];
+  const unknownSkills =
+    result?.skillset_gap.filter((skill) => skill.status === "unknown") || [];
+
   return (
     <div className="page">
       <PageHeading
         eyebrow="KNOW WHERE YOU STAND"
         title="Talent check"
-        description="Get a clearer picture of your readiness for a target company and discover where to focus next."
+        description="Compare a candidate's assessed skills with a company's official requirements."
         action={
           <span className="secure-note">
             <ShieldCheck size={16} /> Private to you
@@ -44,127 +122,248 @@ export function TalentCheck() {
             <Target size={19} />
           </div>
           <div>
-            <b>Choose a company</b>
+            <b>Choose a company and candidate</b>
             <span>
-              We'll compare your profile with what top teams look for.
+              Results use the configured company requirements and candidate
+              profile.
             </span>
           </div>
         </div>
         <div className="check-control-actions">
-          <select
-            value={company}
-            onChange={(event) => setCompany(event.target.value)}
-            aria-label="Select company"
-          >
-            {["Google", "Atlassian", "Microsoft", "Amazon", "Airbnb"].map(
-              (name) => (
-                <option key={name}>{name}</option>
-              ),
-            )}
-          </select>
+          <label className="talent-select-label">
+            <span>Company</span>
+            <select
+              value={company}
+              onChange={(event) => {
+                setCompany(event.target.value);
+                setResult(null);
+                setApiError("");
+              }}
+              aria-label="Select company"
+              disabled={optionsLoading || companies.length === 0}
+            >
+              {companies.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="talent-select-label">
+            <span>Candidate</span>
+            <select
+              value={candidateId}
+              onChange={(event) => {
+                setCandidateId(event.target.value);
+                setResult(null);
+                setApiError("");
+              }}
+              aria-label="Select candidate"
+              disabled={optionsLoading || candidates.length === 0}
+            >
+              {candidates.map((candidate) => (
+                <option key={candidate.id} value={candidate.id}>
+                  {candidate.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             className="button button-primary"
-            onClick={() => dispatch(markReadinessChecked())}
+            onClick={runTalentCheck}
+            disabled={
+              optionsLoading ||
+              checking ||
+              !company ||
+              !candidateId ||
+              Boolean(companyError || candidateError)
+            }
           >
-            <Activity size={16} />{" "}
-            {checked ? "Refresh talent check" : "Run talent check"}
+            <Target size={16} />
+            {optionsLoading
+              ? "Loading options..."
+              : checking
+                ? "Checking..."
+                : "Run talent check"}
           </button>
         </div>
       </section>
-      <div className="readiness-layout">
-        <section className="panel readiness-score-panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">YOUR READINESS</span>
-              <h2>{company} · Software Engineer</h2>
-              <p>
-                {checked
-                  ? "Your profile has been checked against this company's role expectations."
-                  : "Your latest profile snapshot compared with role expectations."}
-              </p>
-            </div>
-            <span className="status-badge">Updated today</span>
-          </div>
-          <div className="score-overview">
-            <ProgressRing value={checked ? 76 : 72} size={148} stroke={11} />
-            <div>
-              <h3>
-                {checked
-                  ? "You're getting closer."
-                  : "You're close to meeting the requirements."}
-              </h3>
-              <p>
-                You're in a good place. A few focused improvements could make
-                your application even stronger.
-              </p>
-              <div className="score-caption">
-                <i /> Your readiness score <b>{checked ? "76" : "72"}/100</b>
+
+      {(companyError || candidateError || apiError) && (
+        <div className="talent-alert" role="alert">
+          {companyError && (
+            <p>
+              <b>Company requirements unavailable:</b> {companyError}
+            </p>
+          )}
+          {candidateError && (
+            <p>
+              <b>Candidate unavailable:</b> {candidateError}
+            </p>
+          )}
+          {apiError && (
+            <p>
+              <b>Talent check failed:</b> {apiError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {checking && (
+        <div className="talent-loading" role="status">
+          Checking the selected candidate against {company} requirements...
+        </div>
+      )}
+
+      {result ? (
+        <div className="readiness-layout">
+          <section className="panel readiness-score-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="eyebrow">YOUR READINESS</span>
+                <h2>
+                  {result.company} · {selectedCandidate?.name || candidateId}
+                </h2>
+                <p>
+                  Assessment based on configured company skill requirements.
+                </p>
               </div>
+              <span className="status-badge success">Assessment complete</span>
             </div>
-          </div>
-          <div className="readiness-breakdown">
-            <div className="breakdown-heading">
-              <b>Skill-wise breakdown</b>
-              <span>Your level compared with this role</span>
-            </div>
-            <div className="breakdown-table">
-              <div className="breakdown-row table-head">
-                <span>Skill</span>
-                <span>Your level</span>
-                <span>Target</span>
-                <span>Status</span>
-              </div>
-              {breakdown.map(([name, yours, required]) => (
-                <div className="breakdown-row" key={name}>
-                  <b>{name}</b>
-                  <span>{yours}/10</span>
-                  <span>{required}/10</span>
-                  <span
-                    className={`status-word ${yours >= required ? "meets" : yours === required - 1 ? "near" : "gap"}`}
-                  >
-                    {yours >= required
-                      ? "Meets"
-                      : yours === required - 1
-                        ? "Near"
-                        : "Gap"}
-                  </span>
+            <div className="score-overview">
+              {result.readiness_score === null ? (
+                <div
+                  className="score-unavailable"
+                  aria-label="Readiness score unavailable"
+                >
+                  <b>—</b>
+                  <small>not assessed</small>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        <aside className="panel improve-panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">YOUR NEXT STEPS</span>
-              <h2>Areas to improve</h2>
-            </div>
-            <span className="soft-icon orange">
-              <Lightbulb size={18} />
-            </span>
-          </div>
-          <p className="improve-intro">
-            A little focused practice can help you feel more ready.
-          </p>
-          <div className="improve-list">
-            {[
-              "Data structures and algorithms",
-              "System design fundamentals",
-              "Cloud technologies (AWS)",
-              "Communication skills",
-            ].map((item, i) => (
-              <div key={item}>
-                <span className="improve-number">0{i + 1}</span>
-                <span>{item}</span>
-                <ArrowRight size={14} />
+              ) : (
+                <ProgressRing
+                  value={result.readiness_score}
+                  size={148}
+                  stroke={11}
+                  label="ready"
+                />
+              )}
+              <div className="score-details">
+                <h3>
+                  {result.readiness_score === null
+                    ? "No required skills have been assessed."
+                    : `${result.readiness_score}% readiness`}
+                </h3>
+                <p>
+                  Unknown skill levels are excluded from the readiness score.
+                  Coverage shows how much of the company's requirements were
+                  assessed.
+                </p>
+                <div className="score-metrics">
+                  <div>
+                    <span>Coverage</span>
+                    <b>{result.coverage_percent}%</b>
+                  </div>
+                  <div>
+                    <span>Assessed skills</span>
+                    <b>
+                      {result.skillset_gap.length - unknownSkills.length}/
+                      {result.skillset_gap.length}
+                    </b>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-          <Link to="/matching" className="button button-outline full-button">
-            Find roles that fit <ArrowRight size={15} />
-          </Link>
-        </aside>
-      </div>
+            </div>
+            <div className="readiness-breakdown">
+              <div className="breakdown-heading">
+                <b>Skill-wise breakdown</b>
+                <span>Candidate level compared with company requirement</span>
+              </div>
+              <div className="breakdown-table">
+                <div className="breakdown-row table-head">
+                  <span>Category</span>
+                  <span>Candidate</span>
+                  <span>Required</span>
+                  <span>Status</span>
+                </div>
+                {result.skillset_gap.map((skill) => {
+                  const unknown = skill.status === "unknown";
+                  const meets = !unknown && !skill.gap;
+                  return (
+                    <div className="breakdown-row" key={skill.category_code}>
+                      <b>{skill.category_code}</b>
+                      <span>
+                        {skill.candidate_level === null
+                          ? "Unknown"
+                          : `${skill.candidate_level}/10`}
+                      </span>
+                      <span>{skill.required_level}/10</span>
+                      <span
+                        className={`status-word ${unknown ? "unknown" : meets ? "meets" : "gap"}`}
+                      >
+                        {unknown
+                          ? "Not assessed"
+                          : meets
+                            ? "Meets"
+                            : `Gap: ${skill.gap_size}`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+          <aside className="panel improve-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="eyebrow">YOUR NEXT STEPS</span>
+                <h2>Assessment summary</h2>
+              </div>
+              <span className="soft-icon orange">
+                <Lightbulb size={18} />
+              </span>
+            </div>
+            <p className="improve-intro">
+              {assessedGaps.length
+                ? "Focus on the assessed categories below to reduce your skill gaps."
+                : "No assessed skill gaps were found for this candidate."}
+            </p>
+            <div className="improve-list">
+              {assessedGaps.length ? (
+                assessedGaps.map((skill, index) => (
+                  <div key={skill.category_code}>
+                    <span className="improve-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span>
+                      {skill.category_code} · {skill.gap_size} level
+                      {skill.gap_size === 1 ? "" : "s"} to close
+                    </span>
+                    <ArrowRight size={14} />
+                  </div>
+                ))
+              ) : (
+                <p className="assessment-note">
+                  {unknownSkills.length
+                    ? `${unknownSkills.length} required ${unknownSkills.length === 1 ? "skill has" : "skills have"} no assessed candidate level.`
+                    : "The candidate meets all assessed requirements."}
+                </p>
+              )}
+            </div>
+            <Link to="/profile" className="button button-outline full-button">
+              Update profile <ArrowRight size={15} />
+            </Link>
+          </aside>
+        </div>
+      ) : (
+        <section className="panel talent-empty-state">
+          <Sparkles size={20} />
+          <b>Run an assessment to see readiness results</b>
+          <span>
+            Select an available company and candidate. Results will include
+            readiness, coverage, assessed skill gaps, and unknown levels.
+          </span>
+        </section>
+      )}
       <div className="tip-banner">
         <div className="tip-icon">
           <Sparkles size={18} />
@@ -172,8 +371,8 @@ export function TalentCheck() {
         <div>
           <b>Progress over perfection</b>
           <span>
-            Readiness is a guide, not a gate. Keep learning and check back as
-            your profile grows.
+            Readiness is a guide, not a gate. Unknown means a skill level was
+            not available to assess.
           </span>
         </div>
         <Link to="/profile">

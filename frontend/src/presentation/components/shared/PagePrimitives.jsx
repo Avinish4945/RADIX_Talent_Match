@@ -39,7 +39,12 @@ export function MetricCard({ label, value, note, icon: Icon, color, trend }) {
   );
 }
 
-export function ProgressRing({ value, size = 116, stroke = 10 }) {
+export function ProgressRing({
+  value,
+  size = 116,
+  stroke = 10,
+  label = "match",
+}) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -65,7 +70,7 @@ export function ProgressRing({ value, size = 116, stroke = 10 }) {
       </svg>
       <span>
         <b>{value}%</b>
-        <small>match</small>
+        <small>{label}</small>
       </span>
     </div>
   );

@@ -3,7 +3,12 @@ import os
 from fastapi import APIRouter, HTTPException
 from app.schemas.talent_check import TalentCheckRequest, TalentCheckResponse
 from app.modules.talent_check.scoring import TalentCheckValidationError
-from app.modules.talent_check.service import CompanyDatasetError, CompanyNotFoundError, run_talent_check
+from app.modules.talent_check.service import (
+    CompanyDatasetError,
+    CompanyNotFoundError,
+    load_company_names,
+    run_talent_check,
+)
 router=APIRouter()
 MOCK_PROFILES={"demo-candidate":{"id":"demo-candidate","name":"Demo Candidate","skills":[
  {"skill_name":"Python","category_code":"COD","level":7,"evidence":"Demo project"},
@@ -14,6 +19,25 @@ def get_candidate_profile(candidate_id):
     enabled=os.getenv("RADIX_USE_MOCK_PROFILES","true").lower() in {"1","true","yes"}
     if enabled and candidate_id in MOCK_PROFILES: return MOCK_PROFILES[candidate_id]
     raise KeyError(candidate_id)
+
+@router.get("/companies")
+def get_companies():
+    try:
+        return {"companies": load_company_names()}
+    except FileNotFoundError as e:
+        raise HTTPException(503,detail=str(e))
+    except CompanyDatasetError as e:
+        raise HTTPException(422,detail=str(e))
+
+@router.get("/candidates")
+def get_candidates():
+    enabled=os.getenv("RADIX_USE_MOCK_PROFILES","true").lower() in {"1","true","yes"}
+    candidates=[
+        {"id":profile["id"],"name":profile["name"]}
+        for profile in MOCK_PROFILES.values()
+    ] if enabled else []
+    return {"candidates":candidates}
+
 @router.post("/",response_model=TalentCheckResponse)
 def talent_check(payload:TalentCheckRequest):
     try: return run_talent_check(get_candidate_profile(payload.candidate_id),payload.company)
