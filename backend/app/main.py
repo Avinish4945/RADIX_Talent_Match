@@ -5,7 +5,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import jd_routes, profile_routes, resume_routes, talent_check_routes
+from app.routes import jd_routes, profile_routes, resume_routes, talent_check_routes,skill_match_routes
 
 app = FastAPI(title="RADIX Talent Match API")
 
@@ -14,6 +14,7 @@ app.include_router(jd_routes.router, prefix="/api/jd", tags=["JD Analytics"])
 app.include_router(resume_routes.router, prefix="/api/resume", tags=["Resume Parsing"])
 app.include_router(talent_check_routes.router, prefix="/api/talent-check", tags=["Talent Check"])
 app.include_router(profile_routes.router, tags=["Profile Builder"])
+app.include_router(skill_match_routes.router, prefix="/api/skill-match", tags=["Skill Matching"])
 
 
 @app.get("/")
