@@ -6,7 +6,7 @@ RADIX Talent Match is a hackathon project designed to help candidates understand
 4.	Talent Check — compares a candidate's profile against a company's expectations.
 5.	Skill Matching — compares a candidate's skills with a specific job description and identifies gaps.
 This repository contains a React frontend and a Python FastAPI backend.
-Current JD Analytics progress: The backend setup, local PDF/DOCX upload, and basic text extraction have been implemented. LLM-based skill extraction and mapping to the RADIX skill categories are still in progress.
+Current implementation status varies by module. Check each module's API and tests before treating a workflow as complete. Talent Check currently includes deterministic scoring, mock candidate support, and a clearly marked synthetic company fixture for local development; organizer-provided company requirements are still needed for an official demonstration.
 
 Contents
 ·	Prerequisites
@@ -223,13 +223,15 @@ The PDF may be scanned or image-based. OCR is not currently included. Try a text
 The uploaded file is missing
 Confirm that the backend is running, check the backend/uploads/ directory, and review the API response and terminal logs.
 Development status
-·	FastAPI app and routes
-·	Local PDF/DOCX upload
-·	Basic PDF/DOCX text extraction
-·	LLM-based JD skill extraction
-·	Validation against the shared RADIX skill schema
-·	Integration with the Skill Matching module
-·	Persistent database integration, if required
+· FastAPI app and module routers (verify routes in `/docs`)
+· Local PDF/DOCX upload and basic text extraction
+· JD Analytics skill extraction and shared-schema integration: verify with its owner and tests
+· Profile Builder API and persistence: structured skill evidence is supported; legacy string skills remain accepted but are not scoreable
+· Talent Check deterministic scoring, API endpoints, tests, and synthetic local fixture
+· Resume Parsing currently extracts document text; confirm whether structured extraction is required by the hackathon brief
+· Skill Matching UI still needs verification against real candidate profiles and analyzed job descriptions
+· End-to-end integration and official company dataset remain acceptance checks
+
 The shared RADIX skill contract specifies skill_name, category_code, evidence, and confidence for each skill. The category codes are COD, DSA, OOD, APTI, COMM, AI, CLOUD, SQL, SWE, SYSD, NETW, OS, and OTHER. Coordinate any schema changes with the rest of the team before integrating modules.
 
 Contributing

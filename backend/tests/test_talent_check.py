@@ -291,8 +291,37 @@ def test_dataset_lookup_and_unknown_company(tmp_path):
     dataset = write_dataset(tmp_path / "companies.json", {"Co": REQUIREMENTS})
 
     result = run_talent_check({"skills": []}, "Co", dataset)
-
-    assert load_company_names(dataset) == ["Co"]
-    assert result["company"] == "Co"
+    assert result["readiness_score"] is None
     with pytest.raises(CompanyNotFoundError):
-        run_talent_check({"skills": []}, "Other", dataset)
+        run_talent_check({"skills": []}, "Missing", dataset)
+
+
+def test_structured_profile_builder_skill_with_level_is_scoreable():
+    from app.schemas.common import SkillEvidence
+    from app.modules.talent_check.scoring import candidate_levels
+
+    skill = SkillEvidence(
+        skill_name="Python",
+        category_code="COD",
+        evidence="Built a project",
+        confidence="high",
+        level=7,
+    )
+    assert candidate_levels({"skills": [skill]}) == {"COD": 7}
+
+
+def test_legacy_string_skill_is_not_guessed_as_proficiency():
+    from app.modules.talent_check.scoring import candidate_levels
+
+    assert candidate_levels({"skills": ["Python", "SQL"]}) == {}
+
+
+def test_synthetic_fixture_is_explicitly_non_official():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    fixture = root / "data" / "talent_check_company_skillsets.json"
+    payload = json.loads(fixture.read_text(encoding="utf-8"))
+
+    assert payload["_metadata"]["official"] is False
+    assert "Example Company" in payload["companies"]

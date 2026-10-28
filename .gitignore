@@ -1,4 +1,3 @@
-
 # Frontend
 frontend/node_modules/
 frontend/dist/
@@ -31,3 +30,6 @@ backend/uploads/
 /data/*
 !/data/README.md
 !/data/*.example
+# Keep the explicitly synthetic Talent Check fixture available in a fresh clone.
+# Replace it with organizer-approved requirements before any official demo.
+!/data/talent_check_company_skillsets.json
