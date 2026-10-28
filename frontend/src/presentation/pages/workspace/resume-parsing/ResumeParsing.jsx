@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -9,39 +9,60 @@ import {
   ShieldCheck,
   WandSparkles,
 } from "lucide-react";
-import { setResumeName } from "../../../../application/store/appSlice";
+import { saveResumeExtraction } from "../../../../application/store/appSlice";
 import {
   PageHeading,
   UploadCard,
 } from "../../../components/shared/PagePrimitives";
+import { apiRequest } from "../../../../infrastructure/api/apiClient";
 
 export function ResumeParsing() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const filename = useSelector((state) => state.app.profile.resumeName);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [parsed, setParsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   function selectFile(file) {
-    dispatch(setResumeName(file.name));
+    setSelectedFile(file);
     setParsed(false);
+    setError("");
   }
-  function parse() {
-    if (!filename) return;
+  async function parse() {
+    if (!selectedFile) return;
     setLoading(true);
-    window.setTimeout(() => {
+    setError("");
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const response = await apiRequest("/resume/parse", {
+        method: "POST",
+        body: formData,
+      });
+      setParsed(response);
+      dispatch(
+        saveResumeExtraction({
+          filename: response.filename,
+          extractedAt: new Date().toISOString(),
+          textLength: response.extracted_text.length,
+        }),
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
       setLoading(false);
-      setParsed(true);
-    }, 600);
+    }
   }
   return (
     <div className="page">
       <PageHeading
         eyebrow="YOUR EXPERIENCE, ORGANIZED"
-        title="Resume parsing"
-        description="Upload your resume and let us map out your experience, skills, and education in seconds."
+        title="Resume text extraction"
+        description="Extract readable text from your PDF or Word resume and review it before updating your profile."
         action={
           <span className="secure-note">
-            <ShieldCheck size={16} /> Your data stays yours
+            <ShieldCheck size={16} /> Temporary upload
           </span>
         }
       />
@@ -52,22 +73,29 @@ export function ResumeParsing() {
               <span className="step-badge">01</span>
               <h2>Upload your resume</h2>
               <p>
-                We'll extract the details you need to build a stronger profile.
+                Your file is processed for text extraction and is not saved by
+                this service.
               </p>
             </div>
           </div>
           <UploadCard
             title="Drop your resume here"
-            description="PDF or DOCX · Up to 10 MB"
-            filename={filename}
+            description="PDF or DOCX · Max 10 MB"
+            accept=".pdf,.docx"
+            filename={selectedFile?.name || ""}
             onFile={selectFile}
           />
+          {error && (
+            <p className="form-error resume-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="upload-trust">
             <span>
-              <Check size={14} /> Secure and private
+              <Check size={14} /> Temporary file removed after extraction
             </span>
             <span>
-              <Check size={14} /> PDF & DOCX supported
+              <Check size={14} /> Text reviewed before profile changes
             </span>
             <span>
               <Check size={14} /> Takes just a moment
@@ -75,14 +103,14 @@ export function ResumeParsing() {
           </div>
           <button
             className="button button-primary full-button"
-            disabled={!filename || loading}
+            disabled={!selectedFile || loading}
             onClick={parse}
           >
             {loading ? (
-              "Parsing your resume..."
+              "Extracting resume text..."
             ) : (
               <>
-                <WandSparkles size={16} /> Parse my resume
+                <WandSparkles size={16} /> Extract text
               </>
             )}
           </button>
@@ -90,8 +118,8 @@ export function ResumeParsing() {
         <aside className="panel parsing-preview">
           <div className="panel-heading">
             <div>
-              <h3>What you'll get</h3>
-              <p>A clean, editable snapshot of your career.</p>
+              <h3>What you’ll get</h3>
+              <p>Readable text from a text-based PDF or DOCX file.</p>
             </div>
             <div className="soft-icon blue">
               <FileText size={18} />
@@ -99,11 +127,14 @@ export function ResumeParsing() {
           </div>
           <div className="preview-list">
             {[
-              ["Personal details", "Name, contact information"],
-              ["Education", "Degrees and institutions"],
-              ["Skills", "Technical and soft skills"],
-              ["Experience", "Roles and accomplishments"],
-              ["Projects", "Work worth showing off"],
+              ["Resume text", "Extracted from readable document content"],
+              ["Original filename", "Shown with the extracted text"],
+              ["Character count", "Approximate length of extracted text"],
+              ["Text preview", "Review before making profile changes"],
+              [
+                "No automatic edits",
+                "Your profile is not changed by extraction",
+              ],
             ].map(([title, desc]) => (
               <div key={title}>
                 <span className="preview-check">
@@ -118,7 +149,10 @@ export function ResumeParsing() {
           </div>
           <div className="privacy-copy">
             <ShieldCheck size={16} />
-            <span>Your resume is processed securely and never shared.</span>
+            <span>
+              Text extraction runs through your configured RADIX backend. A
+              temporary file is removed after extraction.
+            </span>
           </div>
         </aside>
       </div>
@@ -126,52 +160,29 @@ export function ResumeParsing() {
         <section className="panel parsed-result">
           <div className="results-header">
             <div>
-              <span className="eyebrow">RESUME PARSED</span>
-              <h2>We've found your career highlights</h2>
-              <p>Review what we extracted, then add it to your profile.</p>
+              <span className="eyebrow">TEXT EXTRACTED</span>
+              <h2>{parsed.filename}</h2>
+              <p>
+                {parsed.extracted_text.length.toLocaleString()} characters
+                extracted. Review the text before updating your profile.
+              </p>
             </div>
             <span className="status-badge success">
-              <CheckCircle2 size={15} /> Ready to review
+              <CheckCircle2 size={15} /> Extraction complete
             </span>
           </div>
-          <div className="parsed-columns">
-            <div>
-              <span>PERSONAL DETAILS</span>
-              <b>Avinish Kumar</b>
-              <small>avinish@example.com</small>
-            </div>
-            <div>
-              <span>EDUCATION</span>
-              <b>B.Tech, Computer Science</b>
-              <small>XYZ University · 2022–2026</small>
-            </div>
-            <div>
-              <span>SKILLS IDENTIFIED</span>
-              <div className="tag-list">
-                {["Java", "React", "SQL", "Node.js", "DSA"].map((skill) => (
-                  <span className="skill-tag" key={skill}>
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          <details className="extracted-text">
+            <summary>Review extracted text</summary>
+            <pre>{parsed.extracted_text}</pre>
+          </details>
           <button
             className="button button-primary"
             onClick={() => navigate("/profile")}
           >
-            Add details to my profile <ArrowRight size={15} />
+            Continue to My profile <ArrowRight size={15} />
           </button>
         </section>
       )}
     </div>
   );
 }
-
-const profileTabs = [
-  "Personal info",
-  "Skills",
-  "Projects",
-  "Experience",
-  "More",
-];

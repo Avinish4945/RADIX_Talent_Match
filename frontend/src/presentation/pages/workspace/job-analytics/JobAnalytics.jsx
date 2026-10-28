@@ -1,68 +1,137 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Lightbulb,
-  Sparkles,
-  WandSparkles,
-} from "lucide-react";
+import { ArrowRight, Lightbulb, Sparkles, WandSparkles } from "lucide-react";
 import { setAnalyzedJob } from "../../../../application/store/appSlice";
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
+const supportedKeywords = [
+  "Accessibility",
+  "Agile",
+  "AI",
+  "AWS",
+  "Azure",
+  "C#",
+  "C++",
+  "CSS",
+  "Data analysis",
+  "Docker",
+  "Figma",
+  "Git",
+  "Java",
+  "JavaScript",
+  "Kubernetes",
+  "Machine learning",
+  "Node.js",
+  "Python",
+  "React",
+  "Research",
+  "SQL",
+  "System design",
+  "TypeScript",
+  "UX",
+];
+
+function findSupportedKeywords(description) {
+  const normalized = description.toLowerCase();
+  return supportedKeywords.filter((keyword) => {
+    const escaped = keyword
+      .toLowerCase()
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const boundaryPattern = new RegExp(
+      `(^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`,
+      "i",
+    );
+    return boundaryPattern.test(normalized);
+  });
+}
+
 export function JobAnalytics() {
   const [description, setDescription] = useState("");
-  const [analyzed, setAnalyzed] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [validationError, setValidationError] = useState("");
+  const textareaRef = useRef(null);
   const dispatch = useDispatch();
+
   function analyze(event) {
     event.preventDefault();
     if (description.trim().length < 30) {
-      window.alert(
-        "Add a little more detail to the job description (at least 30 characters).",
+      setValidationError(
+        "Enter at least 30 characters to create a keyword preview.",
       );
+      textareaRef.current?.focus();
       return;
     }
-    setAnalyzed(true);
-    dispatch(setAnalyzedJob("Google · Software Engineer"));
+
+    const keywords = findSupportedKeywords(description);
+    const result = {
+      title: "Job description keyword preview",
+      keywords,
+      characterCount: description.trim().length,
+      createdAt: new Date().toISOString(),
+    };
+    setAnalysis(result);
+    setValidationError("");
+    dispatch(setAnalyzedJob(result));
   }
+
   return (
     <div className="page">
       <PageHeading
         eyebrow="UNDERSTAND THE OPPORTUNITY"
         title="Job description analytics"
-        description="Make sense of a job description before you apply. See the skills, experience, and signals employers are looking for."
+        description="Review supported skill keywords found in the job description you provide."
       />
       <div className="analytics-layout">
         <section className="panel analyze-form-panel">
           <div className="panel-heading">
             <div>
               <span className="step-badge">01</span>
-              <h2>Analyze a job description</h2>
-              <p>Paste a job description or upload the file.</p>
+              <h2>Preview a job description</h2>
+              <p>Paste a job description to find supported keyword mentions.</p>
             </div>
             <div className="soft-icon purple">
               <WandSparkles size={19} />
             </div>
           </div>
-          <form onSubmit={analyze}>
-            <label className="field-label">
+          <form onSubmit={analyze} noValidate>
+            <label className="field-label" htmlFor="job-description">
               Job description
               <textarea
+                id="job-description"
+                ref={textareaRef}
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(event) => {
+                  setDescription(event.target.value);
+                  setValidationError("");
+                }}
+                aria-invalid={Boolean(validationError)}
+                aria-describedby={
+                  validationError
+                    ? "job-description-error job-description-count"
+                    : "job-description-count"
+                }
                 placeholder={
-                  "Paste the full job description here...\n\nInclude responsibilities, qualifications, and skills for the clearest analysis."
+                  "Paste the job description here...\n\nThis local preview only flags supported keyword mentions. It does not infer requirements."
                 }
                 rows={9}
               />
             </label>
-            <div className="textarea-footer">
+            <div className="textarea-footer" id="job-description-count">
               <span>{description.length} characters</span>
-              <span>We only use this to create your analysis.</span>
+              <span>Text is analyzed in this browser.</span>
             </div>
+            {validationError && (
+              <p
+                className="form-error inline-form-error"
+                id="job-description-error"
+                role="alert"
+              >
+                {validationError}
+              </p>
+            )}
             <button className="button button-primary" type="submit">
-              <Sparkles size={16} /> Analyze job description
+              <Sparkles size={16} /> Preview keywords
             </button>
           </form>
         </section>
@@ -71,87 +140,57 @@ export function JobAnalytics() {
             <div className="soft-icon blue">
               <Lightbulb size={19} />
             </div>
-            <h3>Get more from your analysis</h3>
+            <h3>About this preview</h3>
             <p>
-              For the best results, include the complete job description,
-              especially the skills and qualifications sections.
+              This demo checks the text you paste for a curated list of
+              supported skill terms. It is not an AI analysis and may miss
+              relevant skills or context.
             </p>
           </div>
           <div className="panel past-analysis">
             <div className="panel-heading">
               <div>
-                <h3>Recent analyses</h3>
+                <h3>What is checked</h3>
               </div>
-              <span className="count-pill">3</span>
             </div>
-            {[
-              "Software Engineer · Google",
-              "Frontend Engineer · Atlassian",
-              "Product Analyst · Airbnb",
-            ].map((job, i) => (
-              <div className="past-row" key={job}>
-                <span className={`company-mark company-${i}`}>
-                  {["G", "A", "a"][i]}
-                </span>
-                <div>
-                  <b>{job.split(" · ")[0]}</b>
-                  <span>
-                    {job.split(" · ")[1]} · {i ? "Oct 21" : "Today"}
-                  </span>
-                </div>
-                <ArrowRight size={15} />
-              </div>
-            ))}
+            <p className="preview-guidance">
+              Keywords such as programming languages, cloud tools, data
+              technologies, and design terms. No company, role, seniority, or
+              experience requirement is guessed.
+            </p>
           </div>
         </aside>
       </div>
-      {analyzed && (
-        <section className="analysis-results panel">
+      {analysis && (
+        <section className="analysis-results panel" aria-live="polite">
           <div className="results-header">
             <div>
-              <span className="eyebrow">ANALYSIS COMPLETE</span>
-              <h2>Software Engineer at Google</h2>
+              <span className="eyebrow">LOCAL KEYWORD PREVIEW</span>
+              <h2>Keywords found in your text</h2>
               <p>
-                Here's what this role is looking for. Use it to focus your next
-                steps.
+                {analysis.characterCount} characters checked. No role,
+                experience level, or company was inferred.
               </p>
             </div>
-            <span className="status-badge success">
-              <CheckCircle2 size={15} /> Job analyzed
-            </span>
+            <span className="status-badge">Demo preview</span>
           </div>
-          <div className="results-metrics">
-            <div>
-              <span>Experience</span>
-              <b>2–4 years</b>
+          <h3 className="results-subtitle">Supported keyword mentions</h3>
+          {analysis.keywords.length ? (
+            <div className="tag-list">
+              {analysis.keywords.map((skill) => (
+                <span className="skill-tag" key={skill}>
+                  {skill}
+                </span>
+              ))}
             </div>
-            <div>
-              <span>Seniority</span>
-              <b>Mid-level</b>
-            </div>
-            <div>
-              <span>Key skills</span>
-              <b>12 identified</b>
-            </div>
-          </div>
-          <h3 className="results-subtitle">Most requested skills</h3>
-          <div className="tag-list">
-            {[
-              "Java",
-              "DSA",
-              "System design",
-              "React",
-              "SQL",
-              "AWS",
-              "Docker",
-            ].map((skill) => (
-              <span className="skill-tag" key={skill}>
-                {skill}
-              </span>
-            ))}
-          </div>
+          ) : (
+            <p className="preview-guidance">
+              No supported keywords were found in this text. Nothing was
+              inferred.
+            </p>
+          )}
           <Link className="button button-primary inline-button" to="/matching">
-            Compare with my profile <ArrowRight size={15} />
+            Browse sample roles <ArrowRight size={15} />
           </Link>
         </section>
       )}
@@ -160,14 +199,14 @@ export function JobAnalytics() {
           <Lightbulb size={18} />
         </div>
         <div>
-          <b>Turn insight into action</b>
+          <b>Use this as a quick text check</b>
           <span>
-            Compare the role with your profile to spot strengths and close your
-            skill gaps.
+            Review the original job description for context before deciding
+            which skills matter.
           </span>
         </div>
         <Link to="/matching">
-          Check my fit <ArrowRight size={15} />
+          Browse sample roles <ArrowRight size={15} />
         </Link>
       </section>
     </div>

@@ -4,10 +4,12 @@ import { createPersistenceMiddleware } from "./persistenceMiddleware";
 import appReducer, {
   addProfileEntry,
   setAnalyzedJob,
-  setResumeName,
+  setMatchingResults,
+  saveResumeExtraction,
   signIn,
   signOut,
   updateProfile,
+  markReadinessChecked,
 } from "./appSlice";
 
 export function configureAppStore({ storage, sessionRepository }) {
@@ -21,6 +23,7 @@ export function configureAppStore({ storage, sessionRepository }) {
         user,
         profile: createDefaultProfile(user, savedProfile),
         readinessChecked: false,
+        latestReadinessResult: null,
       },
     },
     middleware: (getDefaultMiddleware) =>
@@ -31,8 +34,10 @@ export function configureAppStore({ storage, sessionRepository }) {
             signOut,
             updateProfile,
             addProfileEntry,
-            setResumeName,
             setAnalyzedJob,
+            setMatchingResults,
+            saveResumeExtraction,
+            markReadinessChecked,
           ],
           storage,
         ),

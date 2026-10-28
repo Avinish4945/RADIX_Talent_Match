@@ -7,6 +7,7 @@ const appSlice = createSlice({
     user: null,
     profile: {},
     readinessChecked: false,
+    latestReadinessResult: null,
   },
   reducers: {
     initializeApp(state, action) {
@@ -14,9 +15,15 @@ const appSlice = createSlice({
       state.profile = action.payload.profile;
     },
     signIn(state, action) {
-      state.user = action.payload;
+      state.user = {
+        name: action.payload.name,
+        email: action.payload.email,
+      };
       state.profile.name = action.payload.name;
       state.profile.email = action.payload.email;
+      if (action.payload.profile) {
+        Object.assign(state.profile, action.payload.profile);
+      }
     },
     signOut(state) {
       state.user = null;
@@ -34,14 +41,36 @@ const appSlice = createSlice({
         state.profile[section].push(entry);
       }
     },
-    setResumeName(state, action) {
-      state.profile.resumeName = action.payload;
-    },
     setAnalyzedJob(state, action) {
-      state.profile.analyzedJob = action.payload;
+      const analysis =
+        typeof action.payload === "string"
+          ? { title: action.payload }
+          : action.payload;
+      state.profile.analyzedJob = analysis.title;
+      state.profile.jobAnalyses = [
+        ...(state.profile.jobAnalyses || []),
+        analysis,
+      ].slice(-10);
     },
-    markReadinessChecked(state) {
+    saveResumeExtraction(state, action) {
+      const previousCount =
+        state.profile.resumeExtractionCount ||
+        (state.profile.resumeExtractedAt ? 1 : 0);
+      state.profile.resumeName = action.payload.filename;
+      state.profile.resumeExtractedAt = action.payload.extractedAt;
+      state.profile.resumeTextLength = action.payload.textLength;
+      state.profile.resumeExtractionCount = previousCount + 1;
+    },
+    setMatchingResults(state, action) {
+      state.profile.lastMatchingResult = action.payload;
+    },
+    markReadinessChecked(state, action) {
       state.readinessChecked = true;
+      state.latestReadinessResult = action.payload;
+      state.profile.talentCheckCount =
+        (state.profile.talentCheckCount || 0) + 1;
+      state.profile.latestReadinessScore =
+        action.payload?.readiness_score ?? null;
     },
   },
 });
@@ -52,8 +81,9 @@ export const {
   signOut,
   updateProfile,
   addProfileEntry,
-  setResumeName,
   setAnalyzedJob,
+  saveResumeExtraction,
+  setMatchingResults,
   markReadinessChecked,
 } = appSlice.actions;
 

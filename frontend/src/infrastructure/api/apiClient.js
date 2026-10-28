@@ -18,14 +18,17 @@ export async function apiRequest(
   { method = "GET", body, headers = {}, signal } = {},
 ) {
   const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
   const requestHeaders =
-    body === undefined
+    body === undefined || isFormData
       ? headers
       : { "Content-Type": "application/json", ...headers };
   const response = await fetch(url, {
     method,
     headers: requestHeaders,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
     signal,
   });
 

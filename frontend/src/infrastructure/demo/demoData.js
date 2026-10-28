@@ -1,27 +1,3 @@
-export const recentActivity = [
-  {
-    icon: "FileText",
-    title: "Resume parsed successfully",
-    detail: "5 skills identified",
-    time: "2 hours ago",
-    tint: "blue",
-  },
-  {
-    icon: "Activity",
-    title: "Google SWE job analyzed",
-    detail: "12 skills extracted",
-    time: "5 hours ago",
-    tint: "purple",
-  },
-  {
-    icon: "UserRound",
-    title: "Profile updated",
-    detail: "Added 3 new skills",
-    time: "Yesterday",
-    tint: "green",
-  },
-];
-
 export const jobs = [
   {
     company: "Google",

@@ -70,7 +70,7 @@ npm install
 npm run dev
 ```
 
-Use any valid email address and a password with at least six characters to enter demo mode. The demo session and profile are stored in browser local storage.
+Use any valid email address and a password with at least six characters to enter demo mode. Signup also lets you add education, preferred role, skills, projects, experience, and certifications; these profile details can be edited later from the account menu. The demo session and profile are stored in browser local storage.
 
 ## Routes
 
@@ -78,7 +78,7 @@ Use any valid email address and a password with at least six characters to enter
 - `/dashboard` — career overview
 - `/analytics` — job description analysis UI
 - `/resume` — resume upload and simulated extraction UI
-- `/profile` — editable profile, skills, projects, experience, and certifications
+- `/profile` — editable profile, available from the account menu
 - `/talent-check` — backend-backed readiness assessment
 - `/matching` — skill-based job matches
 

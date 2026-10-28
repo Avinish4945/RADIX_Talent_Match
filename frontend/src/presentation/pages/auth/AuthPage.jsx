@@ -29,14 +29,40 @@ export function AuthPage({ initialMode = "login" }) {
       setError("Please enter your email and password.");
       return;
     }
-    dispatch(
-      signIn({
-        name: name
-          .replace(/[._-]/g, " ")
-          .replace(/\b\w/g, (letter) => letter.toUpperCase()),
-        email,
-      }),
-    );
+    const formattedName = name
+      .replace(/[._-]/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const profileEntries = (field) =>
+      String(form.get(field) || "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [title, ...description] = line.split("—");
+          return {
+            title: title.trim(),
+            description: description.join("—").trim(),
+          };
+        })
+        .filter(({ title }) => title);
+    const profile =
+      mode === "signup"
+        ? {
+            education: String(form.get("education") || "").trim(),
+            university: String(form.get("university") || "").trim(),
+            year: String(form.get("year") || "").trim(),
+            role: String(form.get("role") || "").trim(),
+            skills: String(form.get("skills") || "")
+              .split(",")
+              .map((skill) => skill.trim())
+              .filter(Boolean),
+            projects: profileEntries("projects"),
+            experience: profileEntries("experience"),
+            certifications: profileEntries("certifications"),
+          }
+        : undefined;
+
+    dispatch(signIn({ name: formattedName, email, profile }));
     navigate("/dashboard");
   }
 
@@ -99,14 +125,16 @@ export function AuthPage({ initialMode = "login" }) {
         <div className="art-glow art-glow-one" />
         <div className="art-glow art-glow-two" />
       </section>
-      <section className="auth-form-side">
-        <div className="auth-form-wrap">
+      <section
+        className={`auth-form-side ${mode === "signup" ? "auth-signup-side" : ""}`}
+      >
+        <div className={`auth-form-wrap ${mode === "signup" ? "signup" : ""}`}>
           <div className="auth-switch">
             <Link className={mode === "login" ? "selected" : ""} to="/login">
               Log in
             </Link>
             <Link className={mode === "signup" ? "selected" : ""} to="/signup">
-              Create account
+              Get started
             </Link>
           </div>
           <div className="auth-heading">
@@ -121,64 +149,208 @@ export function AuthPage({ initialMode = "login" }) {
             <p>
               {mode === "login"
                 ? "Sign in to pick up right where you left off."
-                : "Create an account and build your career momentum."}
+                : "Create your account and add the essentials to your profile."}
             </p>
-            <p className="demo-note">
-              Demo mode: any valid email and password (6+ characters) will work.
-            </p>
+            {mode === "login" && (
+              <p className="demo-note">
+                Demo mode: any valid email and password (6+ characters) will
+                work.
+              </p>
+            )}
+            {mode === "signup" && (
+              <p className="demo-note">
+                Demo mode: this creates a local browser session, not a
+                registered account. Profile details stay in this browser.
+              </p>
+            )}
+            {mode === "signup" && (
+              <div className="auth-summary-pill">
+                <Sparkles size={12} /> Profile-ready in under 2 minutes
+              </div>
+            )}
           </div>
           <form className="auth-form" onSubmit={handleSubmit}>
             {mode === "signup" && (
-              <label className="field-label">
-                Full name
-                <div className="input-wrap">
-                  <input
-                    name="name"
-                    placeholder="e.g. Avinish Kumar"
-                    autoComplete="name"
-                    required
-                  />
-                  <span className="field-icon">A</span>
+              <>
+                <div className="auth-section-heading">
+                  <b>Account details</b>
+                  <span>Your sign-in information</span>
                 </div>
-              </label>
+                <div className="auth-signup-grid">
+                  <label className="field-label">
+                    Full name
+                    <div className="input-wrap">
+                      <input
+                        name="name"
+                        placeholder="e.g. Avinish Kumar"
+                        autoComplete="name"
+                        required
+                      />
+                      <span className="field-icon">A</span>
+                    </div>
+                  </label>
+                  <label className="field-label">
+                    Email address
+                    <div className="input-wrap">
+                      <Mail size={17} />
+                      <input
+                        name="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
+                  </label>
+                  <label className="field-label auth-field-wide">
+                    Password
+                    <div className="input-wrap">
+                      <LockKeyhole size={17} />
+                      <input
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="At least 6 characters"
+                        autoComplete="new-password"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        className="reveal-button"
+                        type="button"
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={17} />
+                        ) : (
+                          <Eye size={17} />
+                        )}
+                      </button>
+                    </div>
+                  </label>
+                </div>
+                <div className="auth-section-heading">
+                  <b>Professional profile · optional</b>
+                  <span>
+                    Every field below is optional; add details now or later.
+                  </span>
+                </div>
+                <div className="auth-signup-grid">
+                  <label className="field-label">
+                    Preferred role
+                    <input
+                      name="role"
+                      placeholder="e.g. Product designer"
+                      autoComplete="organization-title"
+                    />
+                  </label>
+                  <label className="field-label">
+                    Education
+                    <input
+                      name="education"
+                      placeholder="e.g. B.Sc. Computer Science"
+                    />
+                  </label>
+                  <label className="field-label">
+                    Institution
+                    <input
+                      name="university"
+                      placeholder="School or university"
+                      autoComplete="organization"
+                    />
+                  </label>
+                  <label className="field-label">
+                    Graduation year
+                    <input
+                      name="year"
+                      placeholder="e.g. 2026"
+                      inputMode="numeric"
+                    />
+                  </label>
+                  <label className="field-label auth-field-wide">
+                    Skills
+                    <input
+                      name="skills"
+                      placeholder="e.g. Research, Figma, Prototyping"
+                    />
+                    <span className="auth-field-hint">
+                      Separate skills with commas.
+                    </span>
+                  </label>
+                  <label className="field-label auth-field-wide">
+                    Experience
+                    <textarea
+                      name="experience"
+                      rows={2}
+                      placeholder={
+                        "e.g. Product design intern — Acme, 2024–2025\nList one role per line."
+                      }
+                    />
+                  </label>
+                  <label className="field-label auth-field-wide">
+                    Projects
+                    <textarea
+                      name="projects"
+                      rows={2}
+                      placeholder={
+                        "e.g. Event discovery app — Designed and prototyped a mobile experience.\nList one project per line."
+                      }
+                    />
+                  </label>
+                  <label className="field-label auth-field-wide">
+                    Certifications
+                    <textarea
+                      name="certifications"
+                      rows={2}
+                      placeholder="List certifications, one per line."
+                    />
+                  </label>
+                </div>
+              </>
             )}
-            <label className="field-label">
-              Email address
-              <div className="input-wrap">
-                <Mail size={17} />
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-            </label>
-            <label className="field-label">
-              Password
-              <div className="input-wrap">
-                <LockKeyhole size={17} />
-                <input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  autoComplete={
-                    mode === "login" ? "current-password" : "new-password"
-                  }
-                  required
-                  minLength={6}
-                />
-                <button
-                  className="reveal-button"
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                </button>
-              </div>
-            </label>
+            {mode === "login" && (
+              <>
+                <label className="field-label">
+                  Email address
+                  <div className="input-wrap">
+                    <Mail size={17} />
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </label>
+                <label className="field-label">
+                  Password
+                  <div className="input-wrap">
+                    <LockKeyhole size={17} />
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      className="reveal-button"
+                      type="button"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </label>
+              </>
+            )}
             {mode === "login" && (
               <div className="auth-options">
                 <label className="check-label">
@@ -203,29 +375,31 @@ export function AuthPage({ initialMode = "login" }) {
               </p>
             )}
             <button className="button button-primary auth-submit" type="submit">
-              {mode === "login"
-                ? "Log in to your workspace"
-                : "Create my account"}
+              Continue to demo workspace
               <ArrowRight size={17} />
             </button>
           </form>
-          <div className="auth-divider">
-            <span>or</span>
-          </div>
-          <button
-            className="button button-google"
-            onClick={() => {
-              setError(
-                "Google sign-in will be available when authentication is connected.",
-              );
-            }}
-          >
-            <span className="google-g">G</span> Continue with Google
-          </button>
+          {mode === "login" && (
+            <>
+              <div className="auth-divider">
+                <span>or</span>
+              </div>
+              <button
+                className="button button-google"
+                onClick={() => {
+                  setError(
+                    "Google sign-in will be available when authentication is connected.",
+                  );
+                }}
+              >
+                <span className="google-g">G</span> Continue with Google
+              </button>
+            </>
+          )}
           <p className="auth-bottom">
             {mode === "login" ? "New to Radix?" : "Already have an account?"}{" "}
             <Link to={mode === "login" ? "/signup" : "/login"}>
-              {mode === "login" ? "Create an account" : "Log in"}
+              {mode === "login" ? "Get started" : "Log in"}
             </Link>
           </p>
           <p className="auth-terms">

@@ -25,15 +25,16 @@ export function MetricCard({ label, value, note, icon: Icon, color, trend }) {
       </div>
       <div className="metric-value">{value}</div>
       <div className="metric-note">
-        <span className={trend === "down" ? "trend-down" : "trend-up"}>
-          {trend === "down" ? (
-            <ArrowDownRight size={14} />
-          ) : (
-            <ArrowUpRight size={14} />
-          )}
-          {note.split(" ")[0]}
-        </span>{" "}
-        {note.split(" ").slice(1).join(" ")}
+        {trend && (
+          <span className={trend === "down" ? "trend-down" : "trend-up"}>
+            {trend === "down" ? (
+              <ArrowDownRight size={14} />
+            ) : (
+              <ArrowUpRight size={14} />
+            )}
+          </span>
+        )}
+        {note}
       </div>
     </div>
   );
@@ -79,26 +80,28 @@ export function ProgressRing({
 export function UploadCard({
   title,
   description,
-  accept = ".pdf,.doc,.docx",
+  accept = ".pdf,.docx",
   onFile,
   filename,
   icon: Icon = CloudUpload,
 }) {
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
 
   function chooseFile(file) {
     if (!file) return;
 
-    if (!/\.(pdf|doc|docx)$/i.test(file.name)) {
-      window.alert("Please choose a PDF or Word document.");
+    if (!/\.(pdf|docx)$/i.test(file.name)) {
+      setError("Choose a PDF or DOCX document.");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      window.alert("Please choose a file smaller than 10 MB.");
+      setError("Choose a file smaller than 10 MB.");
       return;
     }
 
+    setError("");
     onFile(file);
   }
 
@@ -119,13 +122,21 @@ export function UploadCard({
       <input
         type="file"
         accept={accept}
-        onChange={(event) => chooseFile(event.target.files?.[0])}
+        onChange={(event) => {
+          chooseFile(event.target.files?.[0]);
+          event.target.value = "";
+        }}
       />
       <div className="upload-icon">
         <Icon size={22} />
       </div>
       <b>{filename || title}</b>
       <span>{filename ? "File ready to analyze" : description}</span>
+      {error && (
+        <span className="upload-error" role="alert">
+          {error}
+        </span>
+      )}
       <span className="upload-cta">
         <CloudUpload size={15} /> Choose file <small>or drag it here</small>
       </span>

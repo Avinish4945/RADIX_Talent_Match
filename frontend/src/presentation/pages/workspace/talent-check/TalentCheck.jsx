@@ -24,6 +24,7 @@ export function TalentCheck() {
   const [companyError, setCompanyError] = useState("");
   const [candidateError, setCandidateError] = useState("");
   const [optionsLoading, setOptionsLoading] = useState(true);
+  const [optionsAttempt, setOptionsAttempt] = useState(0);
   const [checking, setChecking] = useState(false);
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
@@ -33,6 +34,8 @@ export function TalentCheck() {
 
     async function loadOptions() {
       setOptionsLoading(true);
+      setCompanyError("");
+      setCandidateError("");
       const [companyResponse, candidateResponse] = await Promise.allSettled([
         apiRequest("/talent-check/companies"),
         apiRequest("/talent-check/candidates"),
@@ -73,7 +76,7 @@ export function TalentCheck() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [optionsAttempt]);
 
   async function runTalentCheck() {
     setChecking(true);
@@ -86,7 +89,7 @@ export function TalentCheck() {
         body: { candidate_id: candidateId, company },
       });
       setResult(response);
-      dispatch(markReadinessChecked());
+      dispatch(markReadinessChecked(response));
     } catch (error) {
       setApiError(error.message);
     } finally {
@@ -109,10 +112,10 @@ export function TalentCheck() {
       <PageHeading
         eyebrow="KNOW WHERE YOU STAND"
         title="Talent check"
-        description="Compare a candidate's assessed skills with a company's official requirements."
+        description="Compare assessed skills with configured company requirements. Candidate profiles in this demo are sample data."
         action={
           <span className="secure-note">
-            <ShieldCheck size={16} /> Private to you
+            <ShieldCheck size={16} /> Demo candidate data
           </span>
         }
       />
@@ -190,23 +193,34 @@ export function TalentCheck() {
       </section>
 
       {(companyError || candidateError || apiError) && (
-        <div className="talent-alert" role="alert">
-          {companyError && (
-            <p>
-              <b>Company requirements unavailable:</b> {companyError}
-            </p>
+        <section className="talent-alert" aria-live="polite">
+          <div role="alert">
+            {companyError && (
+              <p>
+                <b>Company requirements unavailable:</b> {companyError}
+              </p>
+            )}
+            {candidateError && (
+              <p>
+                <b>Candidate unavailable:</b> {candidateError}
+              </p>
+            )}
+            {apiError && (
+              <p>
+                <b>Talent check failed:</b> {apiError}
+              </p>
+            )}
+          </div>
+          {(companyError || candidateError) && (
+            <button
+              className="button button-outline"
+              onClick={() => setOptionsAttempt((attempt) => attempt + 1)}
+              disabled={optionsLoading}
+            >
+              {optionsLoading ? "Retrying..." : "Retry loading options"}
+            </button>
           )}
-          {candidateError && (
-            <p>
-              <b>Candidate unavailable:</b> {candidateError}
-            </p>
-          )}
-          {apiError && (
-            <p>
-              <b>Talent check failed:</b> {apiError}
-            </p>
-          )}
-        </div>
+        </section>
       )}
 
       {checking && (
@@ -278,7 +292,12 @@ export function TalentCheck() {
                 <b>Skill-wise breakdown</b>
                 <span>Candidate level compared with company requirement</span>
               </div>
-              <div className="breakdown-table">
+              <div
+                className="breakdown-table"
+                role="region"
+                aria-label="Skill breakdown; scroll horizontally to view every column"
+                tabIndex={0}
+              >
                 <div className="breakdown-row table-head">
                   <span>Category</span>
                   <span>Candidate</span>
@@ -350,7 +369,7 @@ export function TalentCheck() {
               )}
             </div>
             <Link to="/profile" className="button button-outline full-button">
-              Update profile <ArrowRight size={15} />
+              My profile <ArrowRight size={15} />
             </Link>
           </aside>
         </div>
@@ -376,7 +395,7 @@ export function TalentCheck() {
           </span>
         </div>
         <Link to="/profile">
-          Update profile <ArrowRight size={15} />
+          My profile <ArrowRight size={15} />
         </Link>
       </div>
     </div>
