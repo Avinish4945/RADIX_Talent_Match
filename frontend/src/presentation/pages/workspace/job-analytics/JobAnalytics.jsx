@@ -4,13 +4,19 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   BriefcaseBusiness,
+  Check,
+  FileSearch,
   Lightbulb,
   Sparkles,
+  Tags,
   Trash2,
   WandSparkles,
 } from "lucide-react";
 import { setAnalyzedJob } from "../../../../application/store/appSlice";
-import { PageHeading } from "../../../components/shared/PagePrimitives";
+import {
+  PageHeading,
+  UploadCard,
+} from "../../../components/shared/PagePrimitives";
 import {
   analyzeJobDescription,
   deleteJobDescription,
@@ -86,8 +92,7 @@ export function JobAnalytics() {
     };
   }, [selectedJobId, detailRefreshKey]);
 
-  function selectFile(event) {
-    const file = event.target.files?.[0] || null;
+  function selectFile(file) {
     setSelectedFile(file);
     setError("");
   }
@@ -178,25 +183,20 @@ export function JobAnalytics() {
               <WandSparkles size={19} />
             </div>
           </div>
-          <form onSubmit={analyze}>
-            <label className="field-label" htmlFor="job-description-file">
-              Job description file
-              <input
-                id="job-description-file"
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={selectFile}
-                disabled={loading}
-                aria-describedby="job-description-file-help"
-              />
-            </label>
-            <div className="textarea-footer" id="job-description-file-help">
-              <span>{selectedFile?.name || "PDF or DOCX"}</span>
+          <form className="jd-upload-form" onSubmit={analyze}>
+            <UploadCard
+              title="Drop your job description here"
+              description="Use a PDF or DOCX job description to get started."
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              filename={selectedFile?.name || ""}
+              onFile={selectFile}
+              disabled={loading}
+            />
+            <div className="jd-upload-trust">
               <span>
-                {selectedFile
-                  ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`
-                  : "Analyzed by the RADIX backend"}
+                <Check size={14} /> PDF or DOCX · Up to 10 MB
               </span>
+              <span>Analyzed by the RADIX backend</span>
             </div>
             {error && (
               <p className="form-error inline-form-error" role="alert">
@@ -208,7 +208,7 @@ export function JobAnalytics() {
               type="submit"
               disabled={loading || !selectedFile}
             >
-              <Sparkles size={16} />
+              {loading ? null : <Sparkles size={16} />}
               {loading
                 ? "Analyzing job description..."
                 : "Analyze job description"}
@@ -216,26 +216,47 @@ export function JobAnalytics() {
           </form>
         </section>
         <aside className="analytics-side">
-          <div className="panel insight-card">
-            <div className="soft-icon blue">
-              <Lightbulb size={19} />
-            </div>
-            <h3>About this analysis</h3>
-            <p>
-              The backend extracts skills supported by the uploaded job
-              description and groups them into RADIX skill categories.
-            </p>
-          </div>
-          <div className="panel past-analysis">
+          <div className="panel analytics-guide">
             <div className="panel-heading">
               <div>
-                <h3>What is checked</h3>
+                <h3>What you’ll get</h3>
+                <p>Key details extracted from your job description.</p>
+              </div>
+              <div className="soft-icon blue">
+                <Lightbulb size={19} />
               </div>
             </div>
-            <p className="preview-guidance">
-              Review each extracted skill’s evidence and confidence against the
-              original job description before relying on it.
-            </p>
+            <div className="preview-list">
+              <div>
+                <span className="preview-check">
+                  <Check size={13} />
+                </span>
+                <span>
+                  <b>Role and company</b>
+                  <small>Identify the position and hiring organization</small>
+                </span>
+              </div>
+              <div>
+                <span className="preview-check">
+                  <Tags size={13} />
+                </span>
+                <span>
+                  <b>Required skills</b>
+                  <small>Organized into RADIX skill categories</small>
+                </span>
+              </div>
+              <div>
+                <span className="preview-check">
+                  <FileSearch size={13} />
+                </span>
+                <span>
+                  <b>Evidence and confidence</b>
+                  <small>
+                    Review each skill against the source description
+                  </small>
+                </span>
+              </div>
+            </div>
           </div>
         </aside>
       </div>

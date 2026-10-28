@@ -3275,6 +3275,68 @@ select:focus-visible {
   font-size: 11px;
 }
 
+.jd-upload-form .upload-card {
+  min-height: 250px;
+  margin-top: 0;
+  border: 1.5px dashed #cbd7e6;
+  background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+}
+
+.jd-upload-form .upload-card:focus-within {
+  outline: 3px solid #3978e722;
+  outline-offset: 3px;
+}
+
+.jd-upload-form .upload-card.is-disabled {
+  cursor: wait;
+}
+
+.jd-upload-form .upload-card.is-disabled input {
+  cursor: wait;
+}
+
+.jd-upload-form .file-note {
+  display: none;
+}
+
+.jd-upload-form .button {
+  width: 100%;
+}
+
+.jd-upload-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 14px 0 18px;
+  color: #78869a;
+  font-size: 11px;
+}
+
+.jd-upload-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jd-upload-trust svg {
+  color: #15996b;
+}
+
+.analytics-guide .panel-heading {
+  align-items: flex-start;
+}
+
+.analytics-guide .preview-list {
+  gap: 19px;
+}
+
+.analytics-guide .preview-check {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+
 .privacy-copy {
   margin-top: 17px;
   padding: 12px;

@@ -84,6 +84,7 @@ export function UploadCard({
   onFile,
   filename,
   icon: Icon = CloudUpload,
+  disabled = false,
 }) {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
@@ -93,11 +94,13 @@ export function UploadCard({
 
     if (!/\.(pdf|docx)$/i.test(file.name)) {
       setError("Choose a PDF or DOCX document.");
+      onFile(null);
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setError("Choose a file smaller than 10 MB.");
+      setError("Choose a file that is 10 MB or smaller.");
+      onFile(null);
       return;
     }
 
@@ -107,21 +110,22 @@ export function UploadCard({
 
   return (
     <label
-      className={`upload-card ${dragging ? "dragging" : ""}`}
+      className={`upload-card${dragging ? " dragging" : ""}${disabled ? " is-disabled" : ""}`}
       onDragOver={(event) => {
         event.preventDefault();
-        setDragging(true);
+        if (!disabled) setDragging(true);
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={(event) => {
         event.preventDefault();
         setDragging(false);
-        chooseFile(event.dataTransfer.files[0]);
+        if (!disabled) chooseFile(event.dataTransfer.files[0]);
       }}
     >
       <input
         type="file"
         accept={accept}
+        disabled={disabled}
         onChange={(event) => {
           chooseFile(event.target.files?.[0]);
           event.target.value = "";
