@@ -76,13 +76,13 @@ Use any valid email address and a password with at least six characters to enter
 
 - `/login`, `/signup` — demo authentication
 - `/dashboard` — career overview
-- `/analytics` — job description analysis UI
+- `/analytics` — backend-backed job description analysis
 - `/resume` — resume upload and simulated extraction UI
 - `/profile` — editable profile, available from the account menu
 - `/talent-check` — backend-backed readiness assessment
 - `/matching` — skill-based job matches
 
-The application routes use React Router data loaders. Talent Check uses the FastAPI backend to load configured companies and candidates, submit assessments, and display readiness, coverage, skill gaps, and unknown levels. Analytics, resume parsing, and matching remain UI simulations.
+The application routes use React Router data loaders. Talent Check uses the FastAPI backend to load configured companies and candidates, submit assessments, and display readiness, coverage, skill gaps, and unknown levels. Job Analytics uploads PDF/DOCX files to the JD analysis endpoint, displays extracted skills and evidence, and loads saved analyses from the backend after refresh. Select a saved job description to load its role and skills. Resume parsing and matching remain UI simulations.
 
 ### Calling the API
 
@@ -105,6 +105,8 @@ export function saveProfile(profile) {
 ```
 
 The helper sends and receives JSON, accepts standard `fetch` options such as `signal` and `headers`, returns `null` for `204 No Content`, and throws an error for non-success responses. Keep endpoint-specific functions in `src/application/<feature>/` or `src/infrastructure/` instead of making network calls directly from JSX.
+
+Job Analytics keeps JD-specific endpoint functions in `src/presentation/pages/workspace/job-analytics/jdApi.js`. It uses `POST /jd/analyze` with a multipart `file` field; the backend accepts PDF and DOCX files up to 10 MB.
 
 ## Scripts
 

@@ -1,9 +1,10 @@
 from pathlib import Path
 import uuid
-
+from uuid import UUID
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from starlette.concurrency import run_in_threadpool
-
+from fastapi import Path as FastAPIPath
+from app.schemas.jd_schema import JDResponse
 from app.services.document_parser import extract_text
 from app.services.jd_analyzer import analyze_jd_text
 from app.utils.validate_jd import validate_jd_analysis
@@ -45,9 +46,72 @@ def save_jd_analysis(analysis: dict, source_file: str) -> dict:
     return saved_record
 
 
+
+
 @router.get("/")
-def get_jd():
-    return {"message": "JD route working"}
+async def get_jd(
+    company: str | None = None,
+    role: str | None = None,
+    page: int = 1,
+    page_size: int = 10,
+):
+    if page < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Page must be at least 1."
+        )
+
+    if not 1 <= page_size <= 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Page size must be between 1 and 100."
+        )
+
+    try:
+        def fetch_jds():
+            query = supabase.table("job_descriptions").select(
+                "*", count="exact"
+            )
+
+            if company and company.strip():
+                query = query.ilike(
+                    "company", f"%{company.strip()}%"
+                )
+
+            if role and role.strip():
+                query = query.ilike(
+                    "role", f"%{role.strip()}%"
+                )
+
+            start = (page - 1) * page_size
+            end = start + page_size - 1
+
+            return (
+                query
+                .order("created_at", desc=True)
+                .range(start, end)
+                .execute()
+            )
+
+        response = await run_in_threadpool(fetch_jds)
+
+        total = response.count or 0
+
+        return {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size,
+            "count": len(response.data),
+            "job_descriptions": response.data,
+        }
+
+    except Exception as exc:
+        print(f"Failed to retrieve job descriptions: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve job descriptions."
+        ) from exc
 
 
 @router.post("/upload")
@@ -152,7 +216,7 @@ async def extract_jd_text(file: UploadFile = File(...)):
 
 
 
-@router.post("/analyze")
+@router.post("/analyze", response_model=JDResponse)
 async def analyze_jd(file: UploadFile = File(...)):
     original_name = file.filename or "uploaded_jd"
     extension = Path(original_name).suffix.lower()
@@ -243,3 +307,91 @@ async def analyze_jd(file: UploadFile = File(...)):
 
     finally:
         await file.close()
+
+
+
+    try:
+        response = await run_in_threadpool(
+            lambda: (
+                supabase
+                .table("job_descriptions")
+                .select("*")
+                .order("created_at", desc=True)
+                .execute()
+            )
+        )
+
+        return {
+            "count": len(response.data),
+            "job_descriptions": response.data,
+        }
+
+    except Exception as exc:
+        print(f"Failed to retrieve job descriptions: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve job descriptions."
+        ) from exc
+
+
+@router.get("/{jd_id}", response_model=JDResponse)
+async def get_jd_by_id(jd_id: UUID):
+    try:
+        response = await run_in_threadpool(
+            lambda: (
+                supabase
+                .table("job_descriptions")
+                .select("*")
+                .eq("id", str(jd_id))
+                .limit(1)
+                .execute()
+            )
+        )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Job description not found."
+            )
+
+        return response.data[0]
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        print(f"Failed to retrieve JD: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve job description."
+        ) from exc
+
+
+@router.delete("/{jd_id}")
+def delete_job_description(jd_id: UUID):
+    try:
+        response = (
+            supabase.table("job_descriptions")
+            .delete()
+            .eq("id", str(jd_id))
+            .execute()
+        )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Job description not found.",
+            )
+
+        return {
+            "message": "Job description deleted successfully.",
+            "id": str(jd_id),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not delete the job description.",
+        ) from exc

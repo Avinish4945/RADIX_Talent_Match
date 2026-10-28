@@ -889,6 +889,182 @@ kbd {
 .analyze-form-panel form {
   margin-top: 23px;
 }
+.jd-saved-panel {
+  margin-top: 16px;
+}
+.jd-saved-panel > .panel-heading {
+  margin-bottom: 12px;
+}
+.jd-saved-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.jd-saved-title .soft-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+}
+.jd-delete-error {
+  margin: 0 0 10px;
+}
+.jd-saved-list {
+  display: grid;
+  gap: 8px;
+}
+.jd-saved-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid #e8edf3;
+  border-radius: 9px;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.jd-saved-row:hover,
+.jd-saved-row.is-selected {
+  border-color: #c9d8ed;
+  background: #f8faff;
+  box-shadow: 0 3px 10px #263b5810;
+}
+.jd-saved-item {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+  padding: 9px 5px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.jd-saved-item:disabled {
+  cursor: wait;
+}
+.jd-saved-item-icon {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #edf4ff;
+  color: #4a78ba;
+}
+.jd-saved-item-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+.jd-saved-item-copy b {
+  overflow: hidden;
+  color: #33435a;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jd-saved-item-copy small {
+  overflow: hidden;
+  color: #8b95a5;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jd-saved-item-meta {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 4px;
+}
+.jd-saved-item-date {
+  color: #8b95a5;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.jd-open-label {
+  color: #3974bd;
+  font-size: 9px;
+  font-weight: 700;
+}
+.jd-delete-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #f0d7d9;
+  border-radius: 7px;
+  background: #fff;
+  color: #b94d58;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.jd-delete-button:hover:not(:disabled) {
+  border-color: #e6b9bd;
+  background: #fff4f4;
+  color: #a93642;
+}
+.jd-delete-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.jd-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eef1f5;
+  color: #738095;
+  font-size: 10px;
+}
+.jd-pagination .button {
+  min-height: 32px;
+  padding: 6px 10px;
+}
+.jd-skill-list {
+  display: grid;
+  gap: 10px;
+}
+.jd-skill {
+  padding: 12px;
+  border: 1px solid #e8edf3;
+  border-radius: 8px;
+}
+.jd-skill-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.jd-skill-heading b {
+  color: #33435a;
+  font-size: 12px;
+}
+.jd-skill p {
+  margin: 8px 0 5px;
+  color: #626b7a;
+  font-size: 11px;
+}
+.jd-skill small {
+  color: #8b95a5;
+  font-size: 10px;
+}
 .field-label {
   display: grid;
   gap: 8px;
@@ -2506,10 +2682,6 @@ kbd {
   display: none;
 }
 
-
-
-
-
 button,
 a,
 input,
@@ -3621,12 +3793,6 @@ select:focus-visible {
   font-size: 12px;
 }
 
-
-
-
-
-
-
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -4004,7 +4170,6 @@ select:focus-visible {
     grid-template-columns: 1fr 1fr;
   }
 
-
   .sidebar {
     width: 232px;
   }
@@ -4035,7 +4200,6 @@ select:focus-visible {
   .readiness-layout {
     grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.8fr);
   }
-
 }
 
 @media (max-width: 820px) {
@@ -4101,7 +4265,6 @@ select:focus-visible {
   .job-match-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 
   .sidebar {
     width: 280px;
@@ -4181,6 +4344,34 @@ select:focus-visible {
 @media (max-width: 600px) {
   body {
     -webkit-text-size-adjust: 100%;
+  }
+  .jd-saved-panel > .panel-heading,
+  .jd-saved-title {
+    align-items: flex-start;
+  }
+  .jd-saved-row {
+    gap: 4px;
+    padding-right: 5px;
+  }
+  .jd-saved-item {
+    gap: 9px;
+    padding: 8px 3px;
+  }
+  .jd-saved-item-icon {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
+  }
+  .jd-saved-item-meta {
+    display: none;
+  }
+  .jd-delete-button {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+  }
+  .jd-delete-button span {
+    display: none;
   }
   .app-frame {
     min-height: 100vh;
@@ -4669,5 +4860,4 @@ select:focus-visible {
     box-shadow: none;
     break-inside: avoid;
   }
-
 }
