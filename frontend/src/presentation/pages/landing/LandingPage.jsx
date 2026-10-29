@@ -35,33 +35,33 @@ export function LandingPage() {
       to: "/analytics",
       icon: Activity,
       color: "indigo",
-      tagline: "Taxonomy Normalization & Weighted Role Deconstruction",
+      tagline: "Requirement Extraction & Evidence Grounding",
       description:
-        "Deconstructs unstructured job descriptions (PDF/DOCX) into normalized technical competencies across the 12 RADIX categories, complete with role seniority bands and importance weights.",
+        "Deconstructs unstructured job descriptions (PDF/DOCX) into normalized technical competencies across the 12 RADIX categories, complete with confidence levels and verbatim evidence quotes.",
       features: [
-        "ESCO & O*NET 28.1 taxonomy mapping",
-        "Deterministic weights (Must-have vs Preferred)",
-        "Contextual sentence extraction for proof quotes",
+        "PDF and Word DOCX document parsing",
+        "Maps requirements onto 12 RADIX categories + OTHER",
+        "Evidence quote and confidence extraction",
       ],
-      stat: "142 JDs Parsed",
+      stat: "PDF / DOCX Ingestion",
     },
     {
       id: "MOD-02",
       number: "02",
       title: "Resume Parsing",
-      category: "NEURAL EXTRACTION",
+      category: "LLM EXTRACTION",
       to: "/resume",
       icon: FileText,
       color: "blue",
-      tagline: "Structured Evidence Extraction & Anti-Gaming",
+      tagline: "Technical Signal & Reviewable Proficiency",
       description:
-        "Transforms dense candidate CVs into rich, structured competency graphs. Pulls education, employment history, flagship projects, and flagged heuristic proficiency estimates for candidate review.",
+        "Transforms candidate CVs into structured candidate data. Pulls education, employment history, flagship projects, and flagged heuristic proficiency estimates for candidate confirmation.",
       features: [
         "Tolerance for varied PDF/DOCX layouts",
-        "Clear heuristic proficiency alerts requiring review",
-        "Extracts verifiable project & publication proof",
+        "Flags provisional proficiency levels for candidate review",
+        "Extracts projects, education, and technical signal",
       ],
-      stat: "98.4% Extraction Fidelity",
+      stat: "Candidate Review Flow",
     },
     {
       id: "MOD-03",
@@ -73,13 +73,13 @@ export function LandingPage() {
       color: "emerald",
       tagline: "One Shared Source of Truth Across All Modules",
       description:
-        "Unified candidate profile editor supporting personal coordinates, granular 1-10 skill proficiencies across 12 RADIX categories, internships, hackathons, and direct Supabase database persistence.",
+        "Unified candidate profile editor supporting personal details, calibrated 1-10 skill proficiencies across 12 RADIX categories, internships, hackathons, and direct database persistence.",
       features: [
         "One shared profile feeding all downstream modules",
         "Real POST /api/profiles persistence with retained ID",
-        "Real-time completeness score & sync status",
+        "Pre-fills directly from resume parsing output",
       ],
-      stat: "100% Database Sync",
+      stat: "POST /api/profiles",
     },
     {
       id: "MOD-04",
@@ -89,13 +89,13 @@ export function LandingPage() {
       to: "/talent-check",
       icon: Target,
       color: "amber",
-      tagline: "Official Company Skillset Readiness Audits",
+      tagline: "Company Skillset Readiness Audits",
       description:
-        "One-click evaluation comparing candidate skills against verified benchmark bars (Google LLC, Microsoft, Oracle) across all 12 RADIX categories, computing readiness scores and gap breakdowns.",
+        "One-button evaluation comparing candidate skills against official company expectations (Google LLC, Microsoft, Oracle) across all 12 RADIX categories, computing readiness scores and gap breakdowns.",
       features: [
-        "Verified benchmark datasets for Tier-1 companies",
+        "Official benchmark datasets for Google, Microsoft & Oracle",
         "Deterministic per-skillset delta computation",
-        "Zero black-box ranking with transparent gap lists",
+        "Prioritized improvement roadmap based on largest gap",
       ],
       stat: "3 Official Benchmarks",
     },
@@ -103,19 +103,19 @@ export function LandingPage() {
       id: "MOD-05",
       number: "05",
       title: "Skill Matching",
-      category: "FUZZY & TAXONOMY MATCH",
+      category: "MULTI-TIER FUZZY MATCH",
       to: "/matching",
       icon: Sparkles,
       color: "rose",
-      tagline: "Role-Specific Multi-Vector Fit & Gap Analysis",
+      tagline: "Role-Specific Fit & Gap Analysis",
       description:
         "Compares a candidate's profile against a specific extracted job description. Calculates match percentage and prioritizes what is missing over raw scores so candidates and recruiters know exact growth actions.",
       features: [
-        "Deterministic backend matching algorithm",
-        "Prioritized missing skills gap breakdown",
-        "Cross-category competency coverage visualization",
+        "Multi-tier matching: exact, aliases, fuzzy, containment",
+        "Prioritized missing skills gap breakdown with next steps",
+        "Skill Evidence Matrix with filterable tabs",
       ],
-      stat: "Auditable Match Logic",
+      stat: "Prioritized Gap Analysis",
     },
   ];
 
@@ -125,7 +125,7 @@ export function LandingPage() {
       title: "Ingest & Deconstruct JD",
       module: "JD Analytics",
       description:
-        "Upload a job spec (or select one of the 6 benchmark roles). The system decomposes natural prose into core competency pillars and requirement tiers.",
+        "Upload a job specification (or select one of the 6 benchmark roles). The system decomposes natural prose into core competency pillars and requirement tiers.",
     },
     {
       num: "02",
@@ -195,7 +195,7 @@ export function LandingPage() {
           <div className="landing-eyebrow">
             <Sparkles size={14} className="landing-sparkle" />
             <span>
-              AI-Powered Competency Intelligence & Recruitment Platform
+              Evidence-Based Competency Intelligence & Matching Platform
             </span>
           </div>
 
@@ -207,9 +207,9 @@ export function LandingPage() {
 
           <p className="landing-subtitle">
             RADIX deconstructs unstructured job descriptions, extracts verified
-            skills from candidate resumes, benchmarks enterprise readiness, and
-            quantifies multidimensional candidate-to-job fit with auditable
-            precision.
+            skills from candidate resumes, benchmarks enterprise readiness
+            across 12 standardized categories, and quantifies multidimensional
+            candidate-to-job fit with auditable gap analysis.
           </p>
 
           <div className="landing-hero-actions">
@@ -223,24 +223,24 @@ export function LandingPage() {
 
           <div className="landing-trust-strip">
             <div className="trust-item">
-              <Shield size={16} className="trust-icon text-emerald" />
-              <span>Auditable semantic scoring</span>
+              <Shield size={16} className="trust-icon text-indigo" />
+              <span>12 Standardized RADIX Competencies</span>
             </div>
             <span className="trust-dot">•</span>
             <div className="trust-item">
-              <Lock size={16} className="trust-icon text-indigo" />
-              <span>Zero black-box ranking</span>
+              <Lock size={16} className="trust-icon text-emerald" />
+              <span>Evidence-Backed Skill Proofs</span>
             </div>
             <span className="trust-dot">•</span>
             <div className="trust-item">
               <Zap size={16} className="trust-icon text-amber" />
-              <span>Built for recruiters & career growth</span>
+              <span>Official Benchmark Datasets</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Interactive Pipeline Showcase */}
+      {/* Interactive Pipeline Showcase - Grounded in Real Benchmark Role & Candidate */}
       <section id="pipeline" className="landing-section bg-surface-alt">
         <div className="section-container">
           <div className="section-header text-center">
@@ -256,20 +256,22 @@ export function LandingPage() {
           <div className="pipeline-card">
             <div className="pipeline-card-header">
               <div className="pipeline-context">
-                <span className="target-pill">Target Role</span>
-                <strong>Senior Distributed Systems Engineer</strong>
-                <span className="dept-tag">Platform Eng · Infrastructure</span>
+                <span className="target-pill">Official Benchmark Target</span>
+                <strong>Google LLC — Software Engineer</strong>
+                <span className="dept-tag">
+                  Systems & Algorithms · Official Spec
+                </span>
               </div>
               <div className="pipeline-candidate">
                 <div className="candidate-badge">
-                  <span className="candidate-avatar">AC</span>
+                  <span className="candidate-avatar">KS</span>
                   <div>
-                    <b>Alex Chen</b>
-                    <small>Candidate Profile #894</small>
+                    <b>Karthik Subramaniam</b>
+                    <small>NIT Trichy · Backend & Distributed Systems</small>
                   </div>
                 </div>
                 <div className="match-score-pill">
-                  <span className="score-val">89%</span>
+                  <span className="score-val">88%</span>
                   <span className="score-lbl">Match Score</span>
                 </div>
               </div>
@@ -283,7 +285,7 @@ export function LandingPage() {
               >
                 <Activity size={16} />
                 <span>1. JD Analytics</span>
-                <span className="tab-badge">0.4s</span>
+                <span className="tab-badge">Extracted</span>
               </button>
               <button
                 type="button"
@@ -292,7 +294,7 @@ export function LandingPage() {
               >
                 <FileCheck2 size={16} />
                 <span>2. Skill Coverage & Evidence</span>
-                <span className="tab-badge success">4/4 Clear</span>
+                <span className="tab-badge success">Verified</span>
               </button>
               <button
                 type="button"
@@ -301,7 +303,7 @@ export function LandingPage() {
               >
                 <Target size={16} />
                 <span>3. Talent Check Readiness</span>
-                <span className="tab-badge primary">Calibrated</span>
+                <span className="tab-badge primary">Audited</span>
               </button>
             </div>
 
@@ -310,74 +312,81 @@ export function LandingPage() {
                 <div className="pipeline-pane">
                   <div className="pane-header">
                     <div>
-                      <h4>Deconstructed Competency Pillars & Weights</h4>
+                      <h4>
+                        Deconstructed Competency Requirements (Google LLC — SWE)
+                      </h4>
                       <p>
-                        Algorithmic extraction isolating 5 critical skill
-                        categories and requirement distributions.
+                        Requirements extracted from the official job
+                        specification mapped onto canonical RADIX categories
+                        with evidence quotes.
                       </p>
                     </div>
-                    <span className="badge badge-success">100% Normalized</span>
+                    <span className="badge badge-success">
+                      Official Benchmark
+                    </span>
                   </div>
 
                   <div className="weights-grid">
                     <div className="weight-item">
                       <div className="weight-info">
                         <span className="weight-title">
-                          Distributed Systems (Raft / Paxos)
+                          Data Structures & Algorithms (Trees, Graphs, DP)
                         </span>
-                        <span className="weight-tier must">Must-have</span>
+                        <span className="weight-tier must">DSA · Core</span>
                       </div>
                       <div className="weight-bar-wrap">
-                        <div className="weight-bar" style={{ width: "35%" }} />
-                        <span className="weight-pct">35% Weight</span>
+                        <div className="weight-bar" style={{ width: "90%" }} />
+                        <span className="weight-pct">High Confidence</span>
                       </div>
                     </div>
                     <div className="weight-item">
                       <div className="weight-info">
                         <span className="weight-title">
-                          Go (Golang) & Concurrency Primitives
+                          C++ / Python / Go Systems Programming
                         </span>
-                        <span className="weight-tier must">Must-have</span>
+                        <span className="weight-tier must">COD · Core</span>
                       </div>
                       <div className="weight-bar-wrap">
-                        <div className="weight-bar" style={{ width: "25%" }} />
-                        <span className="weight-pct">25% Weight</span>
+                        <div className="weight-bar" style={{ width: "85%" }} />
+                        <span className="weight-pct">High Confidence</span>
                       </div>
                     </div>
                     <div className="weight-item">
                       <div className="weight-info">
                         <span className="weight-title">
-                          Kubernetes Operators & Cloud Native
+                          Distributed Systems & High-Throughput Architecture
                         </span>
-                        <span className="weight-tier must">Must-have</span>
+                        <span className="weight-tier must">SYSD · Core</span>
                       </div>
                       <div className="weight-bar-wrap">
-                        <div className="weight-bar" style={{ width: "20%" }} />
-                        <span className="weight-pct">20% Weight</span>
+                        <div className="weight-bar" style={{ width: "80%" }} />
+                        <span className="weight-pct">High Confidence</span>
                       </div>
                     </div>
                     <div className="weight-item">
                       <div className="weight-info">
                         <span className="weight-title">
-                          Apache Kafka Event Streaming Pipelines
+                          Operating Systems & Concurrency Internals
                         </span>
-                        <span className="weight-tier nice">Nice-to-have</span>
+                        <span className="weight-tier nice">OS · Core</span>
                       </div>
                       <div className="weight-bar-wrap">
-                        <div className="weight-bar" style={{ width: "12%" }} />
-                        <span className="weight-pct">12% Weight</span>
+                        <div className="weight-bar" style={{ width: "70%" }} />
+                        <span className="weight-pct">High Confidence</span>
                       </div>
                     </div>
                     <div className="weight-item">
                       <div className="weight-info">
                         <span className="weight-title">
-                          PostgreSQL Profiling & Partitioning
+                          Computer Networks & Socket Protocols
                         </span>
-                        <span className="weight-tier nice">Nice-to-have</span>
+                        <span className="weight-tier nice">
+                          NETW · Supporting
+                        </span>
                       </div>
                       <div className="weight-bar-wrap">
-                        <div className="weight-bar" style={{ width: "8%" }} />
-                        <span className="weight-pct">8% Weight</span>
+                        <div className="weight-bar" style={{ width: "65%" }} />
+                        <span className="weight-pct">Medium Confidence</span>
                       </div>
                     </div>
                   </div>
@@ -388,78 +397,81 @@ export function LandingPage() {
                 <div className="pipeline-pane">
                   <div className="pane-header">
                     <div>
-                      <h4>Verified Candidate Evidence Cross-Reference</h4>
+                      <h4>
+                        Candidate Evidence Cross-Reference (Karthik Subramaniam)
+                      </h4>
                       <p>
-                        Candidate signals cross-referenced against extracted
-                        resume experience records, projects, and verified
-                        credentials.
+                        Candidate skills extracted from resume, matched against
+                        coursework, projects, and confirmed proficiencies.
                       </p>
                     </div>
                     <span className="badge badge-success">
-                      4 Critical Clear
+                      4 Core Competencies
                     </span>
                   </div>
 
                   <div className="evidence-list">
                     <div className="evidence-row">
                       <div className="evidence-head">
-                        <span className="skill-name">Distributed Systems</span>
+                        <span className="skill-name">
+                          Golang & Concurrency (COD)
+                        </span>
                         <span className="badge badge-emerald">
-                          Verified 94%
+                          Level 9 / 10 · Confirmed
                         </span>
                       </div>
                       <p className="evidence-proof">
-                        <Check size={14} className="text-emerald" />{" "}
-                        Demonstrated across 3 previous production roles: Raft
-                        consensus storage engine yielding 150k QPS at ScaleOps
-                        Inc.
-                      </p>
-                    </div>
-
-                    <div className="evidence-row">
-                      <div className="evidence-head">
-                        <span className="skill-name">Go (Golang)</span>
-                        <span className="badge badge-emerald">
-                          Verified 92%
-                        </span>
-                      </div>
-                      <p className="evidence-proof">
-                        <Check size={14} className="text-emerald" />{" "}
-                        High-concurrency event loops, custom goroutine pools,
-                        and open-source raft-go contributions with benchmark
-                        latency under 4ms.
+                        <Check size={14} className="text-emerald" /> Architected
+                        consensus storage engine in Go with custom goroutine
+                        pools and sub-4ms p99 latency.
                       </p>
                     </div>
 
                     <div className="evidence-row">
                       <div className="evidence-head">
                         <span className="skill-name">
-                          Kubernetes Fleet Operations
+                          Data Structures & Algorithms (DSA)
                         </span>
                         <span className="badge badge-emerald">
-                          Verified 90%
+                          Level 8 / 10 · Confirmed
                         </span>
                       </div>
                       <p className="evidence-proof">
-                        <Check size={14} className="text-emerald" /> CKA
-                        verified, scaled multi-region Kubernetes cluster fleet
-                        across 400+ bare-metal nodes with zero cluster outages.
+                        <Check size={14} className="text-emerald" /> Production
+                        Raft state machine implementation with 350+ solved
+                        algorithm benchmarks.
                       </p>
                     </div>
 
                     <div className="evidence-row">
                       <div className="evidence-head">
                         <span className="skill-name">
-                          Apache Kafka & Streaming
+                          Distributed Systems & Apache Kafka (SYSD)
                         </span>
                         <span className="badge badge-emerald">
-                          Verified 85%
+                          Level 8 / 10 · Confirmed
                         </span>
                       </div>
                       <p className="evidence-proof">
                         <Check size={14} className="text-emerald" /> Constructed
-                        real-time streaming pipeline processing 2.4B events/day
-                        via Apache Kafka & Go worker fleet at CloudMatrix.
+                        streaming event bus handling 2.4B events/day with
+                        partition fault tolerance.
+                      </p>
+                    </div>
+
+                    <div className="evidence-row">
+                      <div className="evidence-head">
+                        <span className="skill-name">
+                          Linux Systems & Kernel Tuning (OS)
+                        </span>
+                        <span className="badge badge-emerald">
+                          Level 8 / 10 · Confirmed
+                        </span>
+                      </div>
+                      <p className="evidence-proof">
+                        <Check size={14} className="text-emerald" /> Low-level
+                        socket profiling, memory vacuum tuning, and process
+                        scheduling optimization.
                       </p>
                     </div>
                   </div>
@@ -470,37 +482,40 @@ export function LandingPage() {
                 <div className="pipeline-pane">
                   <div className="pane-header">
                     <div>
-                      <h4>Multidimensional Readiness Scoring</h4>
+                      <h4>Talent Check: Google LLC Expected Bar Comparison</h4>
                       <p>
-                        Calibrated benchmark vectors measured against target
-                        engineering expectations.
+                        Candidate proficiency scores calibrated against Google
+                        LLC's hiring expectations across all evaluated RADIX
+                        skillsets.
                       </p>
                     </div>
                     <span className="badge badge-primary">
-                      Advance to Technical
+                      Ready for Technical
                     </span>
                   </div>
 
                   <div className="radar-metric-grid">
                     <div className="radar-stat-box">
-                      <span className="radar-label">Technical Mastery</span>
-                      <strong className="radar-num text-indigo">92%</strong>
-                      <small>Top decile in concurrency</small>
+                      <span className="radar-label">Coding (COD)</span>
+                      <strong className="radar-num text-indigo">9 / 8</strong>
+                      <small>Exceeds bar (+1)</small>
                     </div>
                     <div className="radar-stat-box">
-                      <span className="radar-label">Experience Depth</span>
-                      <strong className="radar-num text-emerald">88%</strong>
-                      <small>6.5 verified years</small>
+                      <span className="radar-label">Algorithms (DSA)</span>
+                      <strong className="radar-num text-emerald">8 / 9</strong>
+                      <small>Near bar (-1)</small>
                     </div>
                     <div className="radar-stat-box">
-                      <span className="radar-label">Infrastructure Fit</span>
-                      <strong className="radar-num text-sky">90%</strong>
-                      <small>Direct stack overlap</small>
+                      <span className="radar-label">Architecture (SYSD)</span>
+                      <strong className="radar-num text-sky">8 / 8</strong>
+                      <small>Meets expected bar</small>
                     </div>
                     <div className="radar-stat-box">
-                      <span className="radar-label">System Architecture</span>
-                      <strong className="radar-num text-amber">84%</strong>
-                      <small>RFC guild leadership</small>
+                      <span className="radar-label">
+                        Operating Systems (OS)
+                      </span>
+                      <strong className="radar-num text-amber">8 / 7</strong>
+                      <small>Exceeds bar (+1)</small>
                     </div>
                   </div>
 
@@ -508,18 +523,20 @@ export function LandingPage() {
                     <CheckCircle2 size={20} className="text-emerald" />
                     <div className="audit-recommendation-copy">
                       <b>
-                        Recommendation: Advance to Technical Assessment Stage
+                        Target Recommendation: Review Object-Oriented Design &
+                        Network Protocols
                       </b>
                       <span>
-                        Auditable algorithmic decision signed by RADIX AI. Zero
-                        black-box criteria; full gap breakdown available.
+                        Strong match on core systems and coding. Actionable next
+                        steps prioritize closing gaps in Object-Oriented Design
+                        (OOD) and Computer Networks (NETW).
                       </span>
                     </div>
                     <Link
                       to="/talent-check"
                       className="btn btn-secondary btn-sm"
                     >
-                      View Full Audit
+                      View Talent Check
                     </Link>
                   </div>
                 </div>
@@ -537,7 +554,7 @@ export function LandingPage() {
             <h2>Modular Architecture for Precision Hiring & Alignment</h2>
             <p>
               Five decoupled yet synergistic modules that replace ambiguous
-              keyword filtering with deep structural competency modeling.
+              keyword filtering with structured competency modeling.
             </p>
           </div>
 
@@ -629,8 +646,8 @@ export function LandingPage() {
               </div>
               <h4>Structured Skill Insights</h4>
               <p>
-                Move beyond vague keyword tags to a normalized, multi-level
-                hierarchy of competencies mapped to the 12 RADIX standards.
+                Move beyond vague keyword tags to a normalized hierarchy of
+                competencies mapped to the 12 RADIX standards.
               </p>
             </div>
 
@@ -651,8 +668,8 @@ export function LandingPage() {
               </div>
               <h4>One Shared Profile</h4>
               <p>
-                Candidate data persists to Supabase and seamlessly feeds JD
-                Analytics, Resume Parsing, Talent Check, and Skill Matching.
+                Candidate data persists to database storage and seamlessly feeds
+                JD Analytics, Resume Parsing, Talent Check, and Skill Matching.
               </p>
             </div>
 
@@ -674,13 +691,13 @@ export function LandingPage() {
       <section className="landing-cta-banner">
         <div className="cta-banner-inner">
           <div className="cta-badge">
-            <Zap size={14} /> Deploy Next-Gen Competency Matching
+            <Zap size={14} /> Deploy Competency Matching
           </div>
           <h2>Ready to Transform Skill Assessment and Job Alignment?</h2>
           <p>
             Experience transparent, competency-first matching engineered for
             modern hiring workflows. Test the platform on your own role
-            descriptions in under 60 seconds.
+            descriptions or benchmark candidate profiles.
           </p>
           <div className="cta-actions">
             <Link to="/dashboard" className="btn btn-primary btn-lg">
@@ -714,10 +731,10 @@ export function LandingPage() {
                 <Link to="/analytics">JD Analytics</Link>
               </li>
               <li>
-                <Link to="/resume">Resume Parsing Graph</Link>
+                <Link to="/resume">Resume Parsing</Link>
               </li>
               <li>
-                <Link to="/profile">Profile Builder Portfolio</Link>
+                <Link to="/profile">Profile Builder</Link>
               </li>
               <li>
                 <Link to="/talent-check">Talent Check Assessment</Link>
@@ -735,7 +752,9 @@ export function LandingPage() {
                 <span className="muted-text">12 RADIX Categories</span>
               </li>
               <li>
-                <span className="muted-text">ESCO & O*NET 28.1</span>
+                <span className="muted-text">
+                  Google, MSFT & Oracle Benchmarks
+                </span>
               </li>
               <li>
                 <span className="muted-text">Supabase Persistence</span>

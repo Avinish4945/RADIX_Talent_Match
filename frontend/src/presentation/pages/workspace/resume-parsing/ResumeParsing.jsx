@@ -404,7 +404,7 @@ export function ResumeParsing() {
         </div>
 
         <div className="dashboard-hero-actions">
-          <span className="count-pill">Extraction Fidelity: 98.4%</span>
+          <span className="count-pill">Candidate Review Workflow</span>
           <span className="badge badge-indigo">
             Auto-Sync to Profile Active
           </span>

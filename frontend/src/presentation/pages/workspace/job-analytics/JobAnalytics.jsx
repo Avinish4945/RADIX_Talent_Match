@@ -240,13 +240,13 @@ export function JobAnalytics() {
         <div className="dashboard-hero-main">
           <div className="hero-status-tag">
             <span className="status-dot-pulse" />
-            <span>v2.4 Neural Parser · ESCO • O*NET 28.1 • Lightcast</span>
+            <span>12 RADIX Categories · PDF & DOCX Ingestion</span>
           </div>
           <h1 className="hero-greeting">JD Analytics Workspace</h1>
           <p className="hero-subtext">
             AI-assisted job requirement extraction. Deconstruct unstructured
-            requisitions into normalized technical competencies, weighted
-            requirements, and verifiable contextual evidence.
+            requisitions into normalized technical competencies, requirement
+            weights, and verifiable contextual evidence quotes.
           </p>
         </div>
 
@@ -254,7 +254,9 @@ export function JobAnalytics() {
           <span className="count-pill">
             Total Parsed: {savedJobsLoading ? "..." : totalJobs} JDs
           </span>
-          <span className="badge badge-emerald">Avg Taxonomy Match: 94.8%</span>
+          <span className="badge badge-emerald">
+            Structured Skills & Evidence
+          </span>
         </div>
       </section>
 
