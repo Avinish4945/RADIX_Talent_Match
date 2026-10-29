@@ -7,12 +7,9 @@ import {
   BriefcaseBusiness,
   Check,
   CheckCircle2,
-<<<<<<< HEAD
   Database,
   FileText,
   FileUp,
-=======
->>>>>>> f47fe0f (fix)
   Lightbulb,
   Plus,
   Sparkles,
@@ -29,10 +26,7 @@ import {
   toProfilePayload,
   updateProfile as updateProfileApi,
 } from "../../../../infrastructure/api/profile";
-<<<<<<< HEAD
 import { apiRequest } from "../../../../infrastructure/api/apiClient";
-=======
->>>>>>> f47fe0f (fix)
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 const profileTabs = [
@@ -52,7 +46,6 @@ export function ProfileBuilder() {
   const [skillInput, setSkillInput] = useState("");
   const [entryTitle, setEntryTitle] = useState("");
   const [entryDescription, setEntryDescription] = useState("");
-<<<<<<< HEAD
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
 
@@ -117,51 +110,6 @@ export function ProfileBuilder() {
         success: false,
         message: requestError.message,
       });
-=======
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
-
-  async function submit(event) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const updatedProfile = {
-      ...profile,
-      name: data.get("name") ?? profile.name ?? "",
-      email: data.get("email") ?? profile.email ?? "",
-      education: data.get("education") ?? profile.education ?? "",
-      university: data.get("university") ?? profile.university ?? "",
-      year: data.get("year") ?? profile.year ?? "",
-      role: data.get("role") ?? profile.role ?? "",
-    };
-    dispatch(updateProfile(updatedProfile));
-    setSaving(true);
-    setSaved(false);
-    setSaveError("");
-    try {
-      const savedProfileId =
-        profile.backendProfileId || profile.profileId || profile.id;
-      const payload = {
-        ...toProfilePayload(updatedProfile),
-        id: savedProfileId || undefined,
-      };
-      const response = savedProfileId
-        ? await updateProfileApi(savedProfileId, payload)
-        : await createProfile(payload);
-      const profileId = response.id || savedProfileId;
-      dispatch(
-        updateProfile({
-          id: profileId,
-          profileId,
-          backendProfileId: profileId,
-        }),
-      );
-      localStorage.setItem("radix-saved-profile-id", profileId);
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2500);
-    } catch (requestError) {
-      setSaveError(requestError.message);
->>>>>>> f47fe0f (fix)
     } finally {
       setSaving(false);
     }
@@ -185,12 +133,7 @@ export function ProfileBuilder() {
     );
     setEntryTitle("");
     setEntryDescription("");
-<<<<<<< HEAD
     setSaveResult(null);
-=======
-    setSaved(false);
-    setSaveError("");
->>>>>>> f47fe0f (fix)
   }
 
   function addSkill(event) {
@@ -807,7 +750,6 @@ export function ProfileBuilder() {
             <div className="profile-form-footer">
               <span>
                 {saving ? (
-<<<<<<< HEAD
                   <span
                     className="saving-message"
                     style={{
@@ -848,19 +790,7 @@ export function ProfileBuilder() {
                       {(profile.backendProfileId || profile.id).slice(0, 8)}...
                     </b>{" "}
                     · Synced
-=======
-                  "Saving profile..."
-                ) : saveError ? (
-                  <span className="form-error" role="alert">
-                    Could not save profile: {saveError}
                   </span>
-                ) : saved ? (
-                  <span className="saved-message">
-                    <CheckCircle2 size={15} /> Profile saved to backend
->>>>>>> f47fe0f (fix)
-                  </span>
-                ) : profile.backendProfileId || profile.id ? (
-                  `Database ID: ${(profile.backendProfileId || profile.id).slice(0, 8)}... · Synced`
                 ) : (
                   "Your profile is stored securely in the database."
                 )}
@@ -870,12 +800,8 @@ export function ProfileBuilder() {
                 type="submit"
                 disabled={saving}
               >
-<<<<<<< HEAD
                 <Check size={16} />{" "}
                 {saving ? "Saving..." : "Save profile to database"}
-=======
-                <Check size={16} /> {saving ? "Saving..." : "Save profile"}
->>>>>>> f47fe0f (fix)
               </button>
             </div>
           </form>

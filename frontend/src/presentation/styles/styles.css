@@ -5909,8 +5909,7 @@ body {
 
 .skill-matching-page .candidate-match-preview {
   background:
-    radial-gradient(ellipse at 100% 0, #f3edff 0, transparent 48%),
-    #fff;
+    radial-gradient(ellipse at 100% 0, #f3edff 0, transparent 48%), #fff;
 }
 
 .skill-matching-page .matching-controls {

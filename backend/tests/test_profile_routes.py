@@ -110,18 +110,13 @@ def test_get_profile_returns_404_when_profile_is_missing(monkeypatch):
     assert response.json() == {"detail": "Profile not found"}
 
 
-<<<<<<< HEAD
-def test_create_profile_with_existing_id_updates(monkeypatch):
-    observed = {}
-=======
 def test_list_profiles_returns_saved_candidates(monkeypatch):
     expected = [{"id": "profile-123", "name": "Test Candidate"}]
     monkeypatch.setattr(
         profile_routes.profile_service,
         "list_profiles",
-        lambda limit: expected,
+        lambda limit=100: expected,
     )
->>>>>>> f47fe0f (fix)
 
     response = CLIENT.get("/api/profiles")
 
@@ -129,24 +124,6 @@ def test_list_profiles_returns_saved_candidates(monkeypatch):
     assert response.json() == {"profiles": expected}
 
 
-<<<<<<< HEAD
-def test_create_profile_with_stale_id_returns_404(monkeypatch):
-    def fail_stale(_profile, profile_id=None):
-        raise LookupError("Profile ID was not found; reload the profile before saving")
-
-    monkeypatch.setattr(profile_routes.profile_service, "save_profile", fail_stale)
-
-    response = CLIENT.post(
-        "/api/profiles",
-        json={"id": "stale-789", "name": "Stale User", "email": "stale@example.test"},
-    )
-
-    assert response.status_code == 404
-    assert "Profile ID was not found" in response.json()["detail"]
-
-
-=======
->>>>>>> f47fe0f (fix)
 def test_update_profile_returns_success(monkeypatch):
     observed = {}
 

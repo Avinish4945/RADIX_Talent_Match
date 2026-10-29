@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 """Talent Check route supporting shared candidate profiles and official benchmarks."""
 import os
 from typing import Any, Dict
-=======
->>>>>>> f47fe0f (fix)
 from fastapi import APIRouter, HTTPException
 
 from app.modules.talent_check.scoring import TalentCheckValidationError
@@ -20,7 +17,6 @@ from app.services import profile_service
 
 router = APIRouter()
 
-<<<<<<< HEAD
 # Official organizer candidate profiles & demo profile
 CANDIDATE_PROFILES: Dict[str, Dict[str, Any]] = {
     "demo-candidate": {
@@ -103,14 +99,6 @@ def get_candidate_profile(candidate_id: str) -> Dict[str, Any]:
         return CANDIDATE_PROFILES[candidate_id]
 
     raise KeyError(candidate_id)
-=======
-
-def get_candidate_profile(candidate_id: str) -> dict:
-    profile = profile_service.get_profile_by_id(candidate_id)
-    if not profile:
-        raise KeyError(candidate_id)
-    return profile
->>>>>>> f47fe0f (fix)
 
 
 @router.get("/companies")
@@ -125,7 +113,6 @@ def get_companies():
 
 @router.get("/candidates")
 def get_candidates():
-<<<<<<< HEAD
     candidates = profile_service.list_profiles()
     enabled = os.getenv("RADIX_USE_MOCK_PROFILES", "false").lower() in {"1", "true", "yes"}
     if enabled:
@@ -134,26 +121,15 @@ def get_candidates():
             if mid not in existing_ids:
                 candidates.append({"id": mid, "name": mprof["name"]})
     return {"candidates": candidates}
-=======
-    return {"candidates": profile_service.list_profiles()}
->>>>>>> f47fe0f (fix)
 
 
 @router.post("/", response_model=TalentCheckResponse)
 def talent_check(payload: TalentCheckRequest):
-<<<<<<< HEAD
-    profile = None
-=======
->>>>>>> f47fe0f (fix)
     if payload.profile:
         candidate = payload.profile
     elif payload.candidate_id:
         try:
-<<<<<<< HEAD
-            profile = get_candidate_profile(payload.candidate_id)
-=======
             candidate = get_candidate_profile(payload.candidate_id)
->>>>>>> f47fe0f (fix)
         except KeyError as error:
             raise HTTPException(
                 404,
@@ -182,13 +158,8 @@ def talent_check(payload: TalentCheckRequest):
                     422,
                     detail="Selected job description has no extracted skills",
                 )
-<<<<<<< HEAD
-            return run_jd_presence_check(profile, payload.company, jd_skills)
-        return run_talent_check(profile, payload.company)
-=======
             return run_jd_presence_check(candidate, payload.company, jd_skills)
         return run_talent_check(candidate, payload.company)
->>>>>>> f47fe0f (fix)
     except FileNotFoundError as error:
         raise HTTPException(503, detail=str(error)) from error
     except CompanyNotFoundError as error:

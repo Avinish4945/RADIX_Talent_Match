@@ -1,10 +1,5 @@
 import logging
-<<<<<<< HEAD
-from typing import Any, Dict
-=======
-from typing import Any
-
->>>>>>> f47fe0f (fix)
+from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.profile import CandidateProfile
@@ -46,13 +41,8 @@ def get_profile(profile_id: str) -> dict[str, Any]:
 def update_profile(profile_id: str, profile: CandidateProfile) -> dict[str, str]:
     try:
         updated = profile_service.update_profile(profile_id, profile)
-<<<<<<< HEAD
-    except Exception as exc:
-        logger.exception("Failed to update profile")
-=======
     except Exception:
         logger.exception("Failed to update profile %s", profile_id)
->>>>>>> f47fe0f (fix)
         raise HTTPException(
             status_code=500,
             detail="Failed to update profile. An internal error occurred.",
