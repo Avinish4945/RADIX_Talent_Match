@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -15,9 +15,34 @@ import {
   ProgressRing,
 } from "../../../components/shared/PagePrimitives";
 
+const EMPTY_JOB_ANALYSES = [];
+
 export function TalentCheck() {
   const dispatch = useDispatch();
-  const [companies, setCompanies] = useState([]);
+  const jobAnalyses = useSelector(
+    (state) => state.app.profile.jobAnalyses || EMPTY_JOB_ANALYSES,
+  );
+  const extractedCompanies = useMemo(
+    () =>
+      jobAnalyses
+        .map((analysis) =>
+          typeof analysis?.company === "string" ? analysis.company.trim() : "",
+        )
+        .filter(Boolean),
+    [jobAnalyses],
+  );
+  const [configuredCompanies, setConfiguredCompanies] = useState([]);
+  const companies = useMemo(
+    () => [
+      ...new Map(
+        [...configuredCompanies, ...extractedCompanies].map((name) => [
+          name.toLocaleLowerCase(),
+          name,
+        ]),
+      ).values(),
+    ],
+    [configuredCompanies, extractedCompanies],
+  );
   const [candidates, setCandidates] = useState([]);
   const [company, setCompany] = useState("");
   const [candidateId, setCandidateId] = useState("");
@@ -28,6 +53,9 @@ export function TalentCheck() {
   const [checking, setChecking] = useState(false);
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
+  const selectedCompanyConfigured = configuredCompanies.some(
+    (name) => name.toLocaleLowerCase() === company.toLocaleLowerCase(),
+  );
 
   useEffect(() => {
     let active = true;
@@ -45,8 +73,8 @@ export function TalentCheck() {
 
       if (companyResponse.status === "fulfilled") {
         const availableCompanies = companyResponse.value.companies || [];
-        setCompanies(availableCompanies);
-        setCompany(availableCompanies[0] || "");
+        setConfiguredCompanies(availableCompanies);
+        setCompany(availableCompanies[0] || extractedCompanies[0] || "");
         setCompanyError(
           availableCompanies.length
             ? ""
@@ -76,7 +104,7 @@ export function TalentCheck() {
     return () => {
       active = false;
     };
-  }, [optionsAttempt]);
+  }, [extractedCompanies, optionsAttempt]);
 
   async function runTalentCheck() {
     setChecking(true);
@@ -108,10 +136,10 @@ export function TalentCheck() {
     result?.skillset_gap.filter((skill) => skill.status === "unknown") || [];
 
   return (
-    <div className="page">
+    <div className="page talent-check-page">
       <PageHeading
         eyebrow="KNOW WHERE YOU STAND"
-        title="Talent check"
+        title="Talent Check"
         description="Compare assessed skills with configured company requirements. Candidate profiles in this demo are sample data."
         action={
           <span className="secure-note">
@@ -145,12 +173,26 @@ export function TalentCheck() {
               aria-label="Select company"
               disabled={optionsLoading || companies.length === 0}
             >
+              {companies.length === 0 && (
+                <option value="">
+                  {optionsLoading
+                    ? "Loading companies..."
+                    : "No companies available"}
+                </option>
+              )}
               {companies.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
               ))}
             </select>
+            <small>
+              {!company
+                ? "Choose a company to see whether assessment requirements are available."
+                : selectedCompanyConfigured
+                  ? "Company requirements are available for this selection."
+                  : "This company came from Job Analytics, but has no configured assessment requirements."}
+            </small>
           </label>
           <label className="talent-select-label">
             <span>Candidate</span>
@@ -164,6 +206,13 @@ export function TalentCheck() {
               aria-label="Select candidate"
               disabled={optionsLoading || candidates.length === 0}
             >
+              {candidates.length === 0 && (
+                <option value="">
+                  {optionsLoading
+                    ? "Loading candidates..."
+                    : "No candidates available"}
+                </option>
+              )}
               {candidates.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
                   {candidate.name}
@@ -179,7 +228,8 @@ export function TalentCheck() {
               checking ||
               !company ||
               !candidateId ||
-              Boolean(companyError || candidateError)
+              !selectedCompanyConfigured ||
+              Boolean(candidateError)
             }
           >
             <Target size={16} />

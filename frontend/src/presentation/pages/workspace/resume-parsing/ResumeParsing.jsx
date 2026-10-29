@@ -58,7 +58,7 @@ export function ResumeParsing() {
     <div className="page">
       <PageHeading
         eyebrow="YOUR EXPERIENCE, ORGANIZED"
-        title="Resume text extraction"
+        title="Resume Parsing"
         description="Extract readable text from your PDF or Word resume and review it before updating your profile."
         action={
           <span className="secure-note">

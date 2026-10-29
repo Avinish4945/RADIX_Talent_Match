@@ -168,7 +168,7 @@ export function JobAnalytics() {
     <div className="page">
       <PageHeading
         eyebrow="UNDERSTAND THE OPPORTUNITY"
-        title="Job description analytics"
+        title="JD Analytics"
         description="Upload a job description to extract its role, company, and required skills."
       />
       <div className="analytics-layout">

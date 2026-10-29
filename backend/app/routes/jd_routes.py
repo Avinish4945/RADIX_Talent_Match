@@ -310,29 +310,6 @@ async def analyze_jd(file: UploadFile = File(...)):
 
 
 
-    try:
-        response = await run_in_threadpool(
-            lambda: (
-                supabase
-                .table("job_descriptions")
-                .select("*")
-                .order("created_at", desc=True)
-                .execute()
-            )
-        )
-
-        return {
-            "count": len(response.data),
-            "job_descriptions": response.data,
-        }
-
-    except Exception as exc:
-        print(f"Failed to retrieve job descriptions: {exc}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve job descriptions."
-        ) from exc
-
 
 @router.get("/{jd_id}", response_model=JDResponse)
 async def get_jd_by_id(jd_id: UUID):

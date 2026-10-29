@@ -67,7 +67,7 @@ export function SkillMatching() {
     <div className="page">
       <PageHeading
         eyebrow="YOUR SKILLS, THE RIGHT ROLE"
-        title="Skill matching"
+        title="Skill Matching"
         description="Compare your profile skills with a small set of sample roles. These are illustrative, not live vacancies."
         action={<span className="secure-note">Sample role data</span>}
       />

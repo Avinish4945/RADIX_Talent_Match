@@ -96,7 +96,7 @@ export function ProfileBuilder() {
     <div className="page">
       <PageHeading
         eyebrow="YOUR STORY, YOUR WAY"
-        title="My profile"
+        title="Profile Builder"
         description="Bring your experience, skills, and goals together in one profile. Keep it fresh and make it yours."
         action={
           <div className="completion-chip">

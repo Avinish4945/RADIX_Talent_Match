@@ -5,16 +5,12 @@ import {
   Activity,
   ArrowRight,
   BriefcaseBusiness,
-  Download,
   FileText,
   Sparkles,
   Target,
   UserRound,
 } from "lucide-react";
-import {
-  MetricCard,
-  PageHeading,
-} from "../../../components/shared/PagePrimitives";
+import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 function formatActivityDate(value) {
   const date = new Date(value);
@@ -31,19 +27,6 @@ export function Dashboard() {
   const user = useSelector((state) => state.app.user);
   const name = user?.name || profile.name || "there";
 
-  const completionFields = [
-    profile.role,
-    profile.education,
-    profile.university,
-    profile.year,
-    profile.skills?.length,
-    profile.projects?.length,
-    profile.experience?.length,
-    profile.certifications?.length,
-  ];
-  const completion = Math.round(
-    (completionFields.filter(Boolean).length / completionFields.length) * 100,
-  );
   const jobAnalyses = profile.jobAnalyses || [];
   const activity = useMemo(() => {
     const items = jobAnalyses
@@ -85,86 +68,56 @@ export function Dashboard() {
     profile.resumeTextLength,
   ]);
   const latestMatching = profile.lastMatchingResult;
+  const workflow = [
+    {
+      to: "/analytics",
+      label: "Upload JD",
+      detail: "JD Analytics",
+      icon: BriefcaseBusiness,
+      color: "violet",
+    },
+    {
+      to: "/resume",
+      label: "Upload Resume",
+      detail: "Resume Parsing",
+      icon: FileText,
+      color: "blue",
+    },
+    {
+      to: "/profile",
+      label: "Build Profile",
+      detail: "Profile Builder",
+      icon: UserRound,
+      color: "green",
+    },
+    {
+      to: "/talent-check",
+      label: "Check Readiness",
+      detail: "Talent Check",
+      icon: Target,
+      color: "amber",
+    },
+    {
+      to: "/matching",
+      label: "Match a Role",
+      detail: "Skill Matching",
+      icon: Sparkles,
+      color: "pink",
+    },
+  ];
 
   return (
     <div className="page dashboard-page">
       <PageHeading
-        eyebrow={new Date()
-          .toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })
-          .toUpperCase()}
-        title={
-          <>
-            Hello, {name.split(" ")[0]} <span className="wave">✦</span>
-          </>
-        }
-        description="A clear view of your saved profile and recent activity."
-        action={
-          <button
-            className="button button-outline"
-            onClick={() => window.print()}
-          >
-            <Download size={16} /> Export report
-          </button>
-        }
+        eyebrow="ANALYZE  ·  BUILD  ·  ASSESS  ·  MATCH"
+        title="RADIX Talent Match"
+        description={`Welcome${name !== "there" ? `, ${name.split(" ")[0]}` : ""}. Analyze job descriptions, organize your experience, and discover where your skills fit.`}
       />
-      <div className="metric-grid">
-        <MetricCard
-          label="Profile completion"
-          value={`${completion}%`}
-          note="Based on saved profile sections"
-          icon={UserRound}
-          color="green"
-        />
-        <MetricCard
-          label="Resumes extracted"
-          value={
-            profile.resumeExtractionCount || (profile.resumeExtractedAt ? 1 : 0)
-          }
-          note="Locally saved in this browser"
-          icon={FileText}
-          color="blue"
-        />
-        <MetricCard
-          label="Descriptions previewed"
-          value={jobAnalyses.length}
-          note="Local keyword previews"
-          icon={BriefcaseBusiness}
-          color="purple"
-        />
-        <MetricCard
-          label="Latest readiness"
-          value={
-            typeof profile.latestReadinessScore === "number"
-              ? `${profile.latestReadinessScore}%`
-              : "—"
-          }
-          note={`${profile.talentCheckCount || 0} completed check${profile.talentCheckCount === 1 ? "" : "s"}`}
-          icon={Target}
-          color="orange"
-        />
-        <MetricCard
-          label="Sample roles matched"
-          value={latestMatching ? latestMatching.count : "—"}
-          note={
-            latestMatching
-              ? `Sample results for ${latestMatching.role}`
-              : "Run a sample role preview"
-          }
-          icon={Sparkles}
-          color="pink"
-        />
-      </div>
-
       <section className="section-block">
         <div className="section-heading">
           <div>
-            <h2>Explore your workspace</h2>
-            <p>Choose a workflow to continue.</p>
+            <h2>Start with a workflow</h2>
+            <p>Choose a tool to take the next step.</p>
           </div>
           <span className="section-step">YOUR WORKSPACE</span>
         </div>
@@ -173,52 +126,75 @@ export function Dashboard() {
             <span className="quick-icon">
               <Activity size={20} />
             </span>
-            <b>Preview job keywords</b>
-            <p>Check a description for supported skill mentions.</p>
+            <b>JD Analytics</b>
+            <p>Extract role, company, and skills from a job description.</p>
             <span className="quick-link">
-              Preview description <ArrowRight size={14} />
+              Analyze a job <ArrowRight size={14} />
             </span>
           </Link>
           <Link className="quick-card q-purple" to="/resume">
             <span className="quick-icon">
               <FileText size={20} />
             </span>
-            <b>Extract resume text</b>
-            <p>Review text extracted from a PDF or DOCX resume.</p>
+            <b>Resume Parsing</b>
+            <p>Turn your PDF or DOCX resume into structured information.</p>
             <span className="quick-link">
-              Choose resume <ArrowRight size={14} />
+              Parse a resume <ArrowRight size={14} />
             </span>
           </Link>
           <Link className="quick-card q-green" to="/profile">
             <span className="quick-icon">
               <UserRound size={20} />
             </span>
-            <b>My profile</b>
-            <p>Update your experience, skills, and career interests.</p>
+            <b>Profile Builder</b>
+            <p>Bring your skills, projects, and experience together.</p>
             <span className="quick-link">
-              Edit profile <ArrowRight size={14} />
+              Build your profile <ArrowRight size={14} />
             </span>
           </Link>
           <Link className="quick-card q-orange" to="/talent-check">
             <span className="quick-icon">
               <Target size={20} />
             </span>
-            <b>Check readiness</b>
-            <p>Compare a candidate’s assessed skills with requirements.</p>
+            <b>Talent Check</b>
+            <p>Compare assessed skills against a company’s requirements.</p>
             <span className="quick-link">
-              Run talent check <ArrowRight size={14} />
+              Check readiness <ArrowRight size={14} />
             </span>
           </Link>
           <Link className="quick-card q-pink" to="/matching">
             <span className="quick-icon">
               <Sparkles size={20} />
             </span>
-            <b>Compare sample roles</b>
-            <p>See how your listed skills overlap with demo role tags.</p>
+            <b>Skill Matching</b>
+            <p>See how your profile aligns with a specific job role.</p>
             <span className="quick-link">
-              Browse sample roles <ArrowRight size={14} />
+              Match a role <ArrowRight size={14} />
             </span>
           </Link>
+        </div>
+      </section>
+
+      <section className="workflow-panel" aria-labelledby="workflow-title">
+        <div className="section-heading">
+          <div>
+            <h2 id="workflow-title">Complete application flow</h2>
+            <p>Move from a job description to a focused skills match.</p>
+          </div>
+        </div>
+        <div className="workflow-steps">
+          {workflow.map(({ to, label, detail, icon: Icon, color }, index) => (
+            <div className="workflow-step-wrap" key={to}>
+              <Link className={`workflow-step ${color}`} to={to}>
+                <Icon size={20} />
+                <b>{label}</b>
+                <span>{detail}</span>
+              </Link>
+              {index < workflow.length - 1 && (
+                <ArrowRight className="workflow-arrow" size={19} />
+              )}
+            </div>
+          ))}
         </div>
       </section>
 

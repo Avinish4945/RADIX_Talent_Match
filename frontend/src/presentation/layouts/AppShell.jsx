@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Activity,
+  BriefcaseBusiness,
   ChevronDown,
   FileText,
   LayoutDashboard,
@@ -9,6 +10,7 @@ import {
   Menu,
   Settings,
   Sparkles,
+  UserRound,
   UserRoundCheck,
   X,
 } from "lucide-react";
@@ -16,11 +18,12 @@ import { useEffect, useRef, useState } from "react";
 import { signOut } from "../../application/store/appSlice";
 
 const links = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/analytics", label: "Job analytics", icon: Activity },
-  { to: "/resume", label: "Resume", icon: FileText },
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/analytics", label: "JD Analytics", icon: Activity },
+  { to: "/resume", label: "Resume Parsing", icon: FileText },
+  { to: "/profile", label: "Profile Builder", icon: UserRound },
   { to: "/talent-check", label: "Talent Check", icon: UserRoundCheck },
-  { to: "/matching", label: "Job matching", icon: Sparkles },
+  { to: "/matching", label: "Skill Matching", icon: Sparkles },
 ];
 
 export function AppShell() {
