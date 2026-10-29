@@ -15,7 +15,11 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { signOut } from "../../application/store/appSlice";
+import { signOut, updateProfile } from "../../application/store/appSlice";
+import {
+  getLatestProfileFromApi,
+  getProfileByIdFromApi,
+} from "../../infrastructure/api/profileApi";
 
 const links = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -51,6 +55,56 @@ export function AppShell() {
     mediaQuery.addEventListener("change", updateViewport);
     return () => mediaQuery.removeEventListener("change", updateViewport);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function initSavedProfile() {
+      try {
+        const savedId = localStorage.getItem("radix-saved-profile-id");
+        let profileData = null;
+        if (savedId) {
+          profileData = await getProfileByIdFromApi(savedId);
+        }
+        if (!profileData) {
+          profileData = await getLatestProfileFromApi();
+        }
+        if (active && profileData && profileData.name) {
+          let eduStr = profileData.education;
+          let univStr = profileData.university;
+          let yearStr = profileData.year;
+          if (
+            Array.isArray(profileData.education) &&
+            profileData.education.length > 0
+          ) {
+            const firstEdu = profileData.education[0];
+            eduStr = firstEdu.degree || "";
+            univStr = firstEdu.university || "";
+            yearStr = firstEdu.year || "";
+          }
+          dispatch(
+            updateProfile({
+              ...profileData,
+              education: eduStr,
+              university: univStr,
+              year: yearStr,
+              role: profileData.role || profileData.preferred_roles?.[0] || "",
+              id: profileData.id,
+              profileId: profileData.id,
+            }),
+          );
+          if (profileData.id) {
+            localStorage.setItem("radix-saved-profile-id", profileData.id);
+          }
+        }
+      } catch (err) {
+        // Safe fallback if offline
+      }
+    }
+    initSavedProfile();
+    return () => {
+      active = false;
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (sidebarRef.current) {

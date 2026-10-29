@@ -65,3 +65,33 @@ def test_get_profile_returns_404_when_profile_is_missing(monkeypatch):
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Profile not found"}
+
+
+def test_get_latest_profile_returns_saved_profile(monkeypatch):
+    monkeypatch.setattr(
+        profile_routes.profile_service,
+        "get_latest_profile",
+        lambda: {"id": "latest-123", "name": "Latest User", "skills": ["Python"]},
+    )
+
+    response = CLIENT.get("/api/profiles/latest")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": "latest-123",
+        "name": "Latest User",
+        "skills": ["Python"],
+    }
+
+
+def test_get_latest_profile_returns_404_when_none_exists(monkeypatch):
+    monkeypatch.setattr(
+        profile_routes.profile_service,
+        "get_latest_profile",
+        lambda: None,
+    )
+
+    response = CLIENT.get("/api/profiles/latest")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "No profile found"}

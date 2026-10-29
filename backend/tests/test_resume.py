@@ -68,6 +68,10 @@ def test_resume_parse_returns_structured_profile(monkeypatch):
     skill_names = [s["skill_name"] for s in profile["skills"]]
     assert any("Python" in s for s in skill_names)
     assert any("Data Structures" in s for s in skill_names)
+    for skill in profile["skills"]:
+        assert skill["inferred"] is True
+        assert skill["confirmed_by_candidate"] is False
+        assert skill["confidence"] in {"low", "medium"}
 
 
 def test_resume_parse_rejects_unsupported_extension():

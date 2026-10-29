@@ -189,16 +189,20 @@ export function TalentCheck() {
               )}
               {companies.map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {name === "Example Company"
+                    ? "Example Company [Synthetic Fixture]"
+                    : `${name} (Official Benchmark)`}
                 </option>
               ))}
             </select>
             <small>
               {!company
                 ? "Choose a company to see whether assessment requirements are available."
-                : selectedCompanyConfigured
-                  ? "Company requirements are available for this selection."
-                  : "This company came from Job Analytics, but has no configured assessment requirements."}
+                : company === "Example Company"
+                  ? "⚠️ Synthetic Fixture: Preserved for dev/regression testing. Use Google LLC, Microsoft, or Oracle for official evaluations."
+                  : selectedCompanyConfigured
+                    ? "✓ Official Benchmark: Requirements verified against organizer partner specifications."
+                    : "This company came from Job Analytics, but has no configured assessment requirements."}
             </small>
           </label>
           <label className="talent-select-label">

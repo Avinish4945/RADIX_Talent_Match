@@ -258,6 +258,23 @@ export function ResumeParsing() {
 
               {parsed.profile.skills && parsed.profile.skills.length > 0 && (
                 <div style={{ marginTop: "12px" }}>
+                  <div
+                    style={{
+                      background: "#fefce8",
+                      border: "1px solid #fef08a",
+                      borderRadius: "6px",
+                      padding: "8px 12px",
+                      marginBottom: "10px",
+                      fontSize: "12px",
+                      color: "#854d0e",
+                    }}
+                  >
+                    <b>⚠️ Heuristic Proficiency Estimates:</b> Extracted skills
+                    and proficiency levels are automated estimates derived from
+                    resume text. Candidate review and confirmation is
+                    recommended before running official Talent Check
+                    assessments.
+                  </div>
                   <p
                     style={{
                       margin: "0 0 8px 0",
@@ -276,8 +293,12 @@ export function ResumeParsing() {
                       const cat = typeof s === "object" ? s.category_code : "";
                       const lvl =
                         typeof s === "object" && s.level != null
-                          ? `Lvl ${s.level}`
+                          ? `Est. Lvl ${s.level}`
                           : "";
+                      const conf =
+                        typeof s === "object" && s.confidence
+                          ? s.confidence
+                          : "low";
                       return (
                         <span
                           key={idx}
@@ -288,30 +309,55 @@ export function ResumeParsing() {
                             padding: "3px 8px",
                             fontSize: "12px",
                             color: "#302b52",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
                           }}
                         >
-                          <b>{name}</b>{" "}
+                          <b>{name}</b>
                           {cat && (
                             <span
                               style={{ color: "#7456d6", fontSize: "11px" }}
                             >
                               [{cat}]
                             </span>
-                          )}{" "}
+                          )}
                           {lvl && (
                             <span
                               style={{
-                                color: "#199568",
+                                color: "#ca8a04",
                                 fontSize: "11px",
                                 fontWeight: "600",
+                                background: "#fef9c3",
+                                padding: "1px 4px",
+                                borderRadius: "3px",
                               }}
+                              title="Estimated proficiency from resume; candidate confirmation required"
                             >
                               {lvl}
                             </span>
                           )}
+                          <span
+                            style={{
+                              color: "#64748b",
+                              fontSize: "10px",
+                            }}
+                          >
+                            ({conf} conf)
+                          </span>
                         </span>
                       );
                     })}
+                  </div>
+                  <div style={{ marginTop: "12px" }}>
+                    <button
+                      className="button button-primary"
+                      style={{ fontSize: "13px", padding: "6px 14px" }}
+                      onClick={() => navigate("/profile")}
+                    >
+                      Review & Confirm Skills in Profile Builder{" "}
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
                 </div>
               )}

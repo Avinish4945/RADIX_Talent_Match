@@ -54,3 +54,5 @@ def test_official_company_skillsets_fixture():
     assert "Microsoft" in payload["companies"]
     assert "Oracle" in payload["companies"]
     assert "Example Company" in payload["companies"]
+    assert "Example Company" in payload["_metadata"]["synthetic_fixtures"]
+    assert "Google LLC" in payload["_metadata"]["verified_benchmarks"]

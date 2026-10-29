@@ -1,8 +1,21 @@
 {
   "_metadata": {
     "official": true,
-    "purpose": "Official company skill requirements derived from organizer job descriptions for Google LLC, Microsoft, and Oracle.",
-    "warning": "Organizer requirements aligned with hackathon benchmark roles."
+    "purpose": "Company skill requirements verified against organizer-provided benchmark job descriptions for Google LLC, Microsoft, and Oracle, with synthetic development fixtures explicitly distinguished.",
+    "verified_benchmarks": [
+      "Google LLC",
+      "Microsoft",
+      "Oracle"
+    ],
+    "synthetic_fixtures": [
+      "Example Company"
+    ],
+    "benchmark_sources": {
+      "Google LLC": "data/Google LLC - Software Engineer.pdf and data/Google LLC - Data Scientist.pdf",
+      "Microsoft": "data/Microsoft - Software Engineer.pdf and data/Microsoft - Data Analyst.pdf",
+      "Oracle": "data/Oracle - Associate Software Engineer.pdf and data/Oracle - Application Support Analyst.pdf"
+    },
+    "synthetic_disclaimer": "Example Company is an explicitly synthetic test fixture retained for backwards compatibility and regression tests. It is not an official partner requirement."
   },
   "companies": {
     "Google LLC": [

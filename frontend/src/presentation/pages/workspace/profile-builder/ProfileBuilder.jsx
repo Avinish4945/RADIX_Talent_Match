@@ -6,8 +6,10 @@ import {
   BriefcaseBusiness,
   Check,
   CheckCircle2,
+  Database,
   Lightbulb,
   Plus,
+  Sparkles,
   Users,
   X,
 } from "lucide-react";
@@ -15,6 +17,7 @@ import {
   addProfileEntry,
   updateProfile,
 } from "../../../../application/store/appSlice";
+import { saveProfileToApi } from "../../../../infrastructure/api/profileApi";
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 const profileTabs = [
@@ -24,6 +27,7 @@ const profileTabs = [
   "Experience",
   "More",
 ];
+
 export function ProfileBuilder() {
   const dispatch = useDispatch();
   const profile = useSelector((state) => state.app.profile);
@@ -31,28 +35,81 @@ export function ProfileBuilder() {
   const [skillInput, setSkillInput] = useState("");
   const [entryTitle, setEntryTitle] = useState("");
   const [entryDescription, setEntryDescription] = useState("");
-  const [saved, setSaved] = useState(false);
-  function submit(event) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState(null);
+
+  async function submit(event) {
     event.preventDefault();
-    if (tab !== "Personal info") {
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2500);
-      return;
+    setIsSaving(true);
+    setSaveResult(null);
+
+    const form =
+      event.currentTarget instanceof HTMLFormElement
+        ? event.currentTarget
+        : event.currentTarget.closest("form");
+    const data = form ? new FormData(form) : null;
+
+    const name = data?.get("name") ?? profile.name ?? "";
+    const email = data?.get("email") ?? profile.email ?? "";
+    const education = data?.get("education") ?? profile.education ?? "";
+    const university = data?.get("university") ?? profile.university ?? "";
+    const year = data?.get("year") ?? profile.year ?? "";
+    const role = data?.get("role") ?? profile.role ?? "";
+
+    const localUpdates = {
+      name,
+      email,
+      education,
+      university,
+      year,
+      role,
+    };
+    dispatch(updateProfile(localUpdates));
+
+    const payload = {
+      name,
+      email,
+      role,
+      education: [
+        {
+          degree: education,
+          university,
+          year,
+        },
+      ],
+      skills: profile.skills || [],
+      projects: profile.projects || [],
+      experience: profile.experience || [],
+      internships: profile.internships || profile.experience || [],
+      certifications: (profile.certifications || []).map((c) =>
+        typeof c === "object" ? c.title || JSON.stringify(c) : c,
+      ),
+      preferred_roles: role
+        ? [role]
+        : profile.preferred_roles || ["Software Engineer"],
+    };
+
+    try {
+      const res = await saveProfileToApi(payload);
+      const savedId = res?.id || profile.id || "saved-profile";
+      dispatch(updateProfile({ id: savedId, profileId: savedId }));
+      localStorage.setItem("radix-saved-profile-id", savedId);
+      setSaveResult({
+        success: true,
+        id: savedId,
+        message: `Saved to database (ID: ${savedId.slice(0, 8)}...)`,
+      });
+    } catch (err) {
+      setSaveResult({
+        success: false,
+        message: `Saved locally (DB: ${err.message})`,
+      });
+    } finally {
+      setIsSaving(false);
+      window.setTimeout(() => setSaveResult(null), 5000);
     }
-    const data = new FormData(event.currentTarget);
-    dispatch(
-      updateProfile({
-        name: data.get("name"),
-        email: data.get("email"),
-        education: data.get("education"),
-        university: data.get("university"),
-        year: data.get("year"),
-        role: data.get("role"),
-      }),
-    );
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
   }
+
   function addEntry(event) {
     event.preventDefault();
     const title = entryTitle.trim();
@@ -71,9 +128,8 @@ export function ProfileBuilder() {
     );
     setEntryTitle("");
     setEntryDescription("");
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
   }
+
   function addSkill(event) {
     event.preventDefault();
     const skill = skillInput.trim();
@@ -85,9 +141,22 @@ export function ProfileBuilder() {
       })
     )
       return;
-    dispatch(updateProfile({ skills: [...profile.skills, skill] }));
+
+    const newSkillObj = {
+      skill_name: skill,
+      category_code: "OTHER",
+      level: 6,
+      evidence: "Added in Profile Builder",
+      confidence: "medium",
+      inferred: false,
+      confirmed_by_candidate: true,
+      review_status: "confirmed",
+    };
+
+    dispatch(updateProfile({ skills: [...profile.skills, newSkillObj] }));
     setSkillInput("");
   }
+
   function removeSkill(skillToRemove) {
     const targetName =
       typeof skillToRemove === "object"
@@ -102,20 +171,61 @@ export function ProfileBuilder() {
       }),
     );
   }
+
+  function updateSkillLevel(index, newLevel) {
+    const updated = [...profile.skills];
+    const item = updated[index];
+    if (typeof item === "object") {
+      updated[index] = {
+        ...item,
+        level: Number(newLevel),
+        inferred: false,
+        confirmed_by_candidate: true,
+        review_status: "confirmed",
+      };
+    } else {
+      updated[index] = {
+        skill_name: item,
+        category_code: "OTHER",
+        level: Number(newLevel),
+        evidence: "Confirmed by candidate in Profile Builder",
+        confidence: "medium",
+        inferred: false,
+        confirmed_by_candidate: true,
+        review_status: "confirmed",
+      };
+    }
+    dispatch(updateProfile({ skills: updated }));
+  }
+
+  function confirmSkill(index) {
+    const updated = [...profile.skills];
+    const item = updated[index];
+    if (typeof item === "object") {
+      updated[index] = {
+        ...item,
+        inferred: false,
+        confirmed_by_candidate: true,
+        review_status: "confirmed",
+      };
+      dispatch(updateProfile({ skills: updated }));
+    }
+  }
+
   return (
     <div className="page">
       <PageHeading
         eyebrow="YOUR STORY, YOUR WAY"
         title="Profile Builder"
-        description="Bring your experience, skills, and goals together in one profile. Keep it fresh and make it yours."
+        description="Bring your experience, skills, and goals together in one profile. Persisted directly to database."
         action={
           <div className="completion-chip">
             <div>
-              <span>PROFILE STRENGTH</span>
-              <b>80%</b>
+              <span>PROFILE DATABASE STATUS</span>
+              <b>{profile.id ? "SYNCED" : "LOCAL"}</b>
             </div>
             <div className="mini-progress">
-              <i />
+              <i style={{ width: profile.id ? "100%" : "60%" }} />
             </div>
           </div>
         }
@@ -143,7 +253,7 @@ export function ProfileBuilder() {
                   {tab === "Personal info"
                     ? "Let's start with the basics"
                     : tab === "Skills"
-                      ? "Your skills"
+                      ? "Your skills & proficiency"
                       : tab === "Projects"
                         ? "Projects you're proud of"
                         : tab === "Experience"
@@ -153,7 +263,9 @@ export function ProfileBuilder() {
                 <p>
                   {tab === "Personal info"
                     ? "A few details help us make your profile feel like you."
-                    : "This is your space. Add details that help tell your story."}
+                    : tab === "Skills"
+                      ? "Review and confirm proficiency levels (0-10) for accurate Talent Check evaluation."
+                      : "This is your space. Add details that help tell your story."}
                 </p>
               </div>
               <span className="required-note">* Required</span>
@@ -193,9 +305,28 @@ export function ProfileBuilder() {
             )}
             {tab === "Skills" && (
               <div className="skills-editor">
+                <div
+                  style={{
+                    background: "#f7f5ff",
+                    border: "1px solid #e0d8fa",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    marginBottom: "14px",
+                    fontSize: "12.5px",
+                    color: "#5433b2",
+                  }}
+                >
+                  <Sparkles
+                    size={14}
+                    style={{ verticalAlign: "middle", marginRight: "6px" }}
+                  />
+                  <b>Heuristic Proficiency Review:</b> Skills extracted from
+                  your resume are provisional estimates. Review and confirm your
+                  proficiency levels (1–10) below.
+                </div>
                 <p className="field-label">
-                  Your skills{" "}
-                  <span>Skills help us find roles that fit you.</span>
+                  Your skills ({profile.skills.length})
+                  <span>Skills help us calculate accurate role matches.</span>
                 </p>
                 <div className="editable-tags">
                   {profile.skills.map((skill, index) => {
@@ -207,31 +338,107 @@ export function ProfileBuilder() {
                       typeof skill === "object" && skill.level != null
                         ? skill.level
                         : null;
+                    const isInferred =
+                      typeof skill === "object" &&
+                      (skill.inferred || !skill.confirmed_by_candidate);
+
                     return (
-                      <span className="editable-tag" key={`${name}-${index}`}>
+                      <span
+                        className="editable-tag"
+                        key={`${name}-${index}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          background: isInferred ? "#fffef0" : "#f5fbf7",
+                          borderColor: isInferred ? "#fde047" : "#bbf7d0",
+                        }}
+                      >
                         <b>{name}</b>
                         {cat && (
                           <small
                             style={{
-                              marginLeft: 4,
                               color: "#6841cf",
                               fontSize: "10px",
+                              fontWeight: "600",
                             }}
                           >
                             [{cat}]
                           </small>
                         )}
-                        {lvl != null && (
-                          <small
+                        {lvl != null ? (
+                          <span
                             style={{
-                              marginLeft: 4,
-                              color: "#199568",
-                              fontWeight: "600",
-                              fontSize: "10px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px",
                             }}
                           >
-                            Lvl {lvl}
-                          </small>
+                            <select
+                              value={lvl}
+                              onChange={(e) =>
+                                updateSkillLevel(index, e.target.value)
+                              }
+                              style={{
+                                fontSize: "10px",
+                                padding: "1px 2px",
+                                border: isInferred
+                                  ? "1px dashed #ca8a04"
+                                  : "1px solid #16a34a",
+                                borderRadius: "4px",
+                                background: isInferred ? "#fef9c3" : "#dcfce7",
+                                color: isInferred ? "#854d0e" : "#14532d",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                              }}
+                              title={
+                                isInferred
+                                  ? "Heuristic estimate requiring confirmation"
+                                  : "Confirmed candidate proficiency level"
+                              }
+                            >
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((l) => (
+                                <option key={l} value={l}>
+                                  Lvl {l}
+                                </option>
+                              ))}
+                            </select>
+                            {isInferred && (
+                              <button
+                                type="button"
+                                style={{
+                                  background: "#fef08a",
+                                  border: "none",
+                                  borderRadius: "3px",
+                                  padding: "1px 4px",
+                                  fontSize: "9px",
+                                  fontWeight: "700",
+                                  color: "#854d0e",
+                                  cursor: "pointer",
+                                }}
+                                title="Confirm this proficiency level"
+                                onClick={() => confirmSkill(index)}
+                              >
+                                Confirm
+                              </button>
+                            )}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            style={{
+                              background: "#f1f5f9",
+                              border: "1px dashed #cbd5e1",
+                              borderRadius: "3px",
+                              padding: "1px 4px",
+                              fontSize: "9px",
+                              color: "#475569",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => updateSkillLevel(index, 6)}
+                          >
+                            + Set Lvl
+                          </button>
                         )}
                         <button
                           type="button"
@@ -264,7 +471,13 @@ export function ProfileBuilder() {
                 <div className="suggested-skills">
                   <span>Popular for your role</span>
                   {["TypeScript", "AWS", "Communication"]
-                    .filter((item) => !profile.skills.includes(item))
+                    .filter(
+                      (item) =>
+                        !profile.skills.some((s) => {
+                          const n = typeof s === "object" ? s.skill_name : s;
+                          return n.toLowerCase() === item.toLowerCase();
+                        }),
+                    )
                     .map((skill) => (
                       <button
                         type="button"
@@ -272,7 +485,18 @@ export function ProfileBuilder() {
                         onClick={() =>
                           dispatch(
                             updateProfile({
-                              skills: [...profile.skills, skill],
+                              skills: [
+                                ...profile.skills,
+                                {
+                                  skill_name: skill,
+                                  category_code: "OTHER",
+                                  level: 6,
+                                  evidence: "Added from popular suggestions",
+                                  confidence: "medium",
+                                  inferred: false,
+                                  confirmed_by_candidate: true,
+                                },
+                              ],
                             }),
                           )
                         }
@@ -348,16 +572,48 @@ export function ProfileBuilder() {
             )}
             <div className="profile-form-footer">
               <span>
-                {saved ? (
-                  <span className="saved-message">
-                    <CheckCircle2 size={15} /> Changes saved
+                {isSaving ? (
+                  <span
+                    className="saving-message"
+                    style={{ color: "#6841cf", fontWeight: "500" }}
+                  >
+                    <Database size={15} /> Saving profile to database...
+                  </span>
+                ) : saveResult?.success ? (
+                  <span
+                    className="saved-message"
+                    style={{
+                      color: "#16a34a",
+                      fontWeight: "600",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <CheckCircle2 size={16} /> {saveResult.message}
+                  </span>
+                ) : saveResult && !saveResult.success ? (
+                  <span
+                    className="error-message"
+                    style={{ color: "#dc2626", fontSize: "13px" }}
+                  >
+                    ⚠️ {saveResult.message}
+                  </span>
+                ) : profile.id ? (
+                  <span style={{ color: "#64748b", fontSize: "12.5px" }}>
+                    Database ID: <b>{profile.id.slice(0, 8)}...</b> · Synced
                   </span>
                 ) : (
-                  "Your profile is only shared when you choose to share it."
+                  "Your profile is stored securely in the database."
                 )}
               </span>
-              <button className="button button-primary" type="submit">
-                <Check size={16} /> Save profile
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={isSaving}
+              >
+                <Check size={16} />{" "}
+                {isSaving ? "Saving..." : "Save profile to database"}
               </button>
             </div>
           </form>
@@ -369,7 +625,7 @@ export function ProfileBuilder() {
                 {(profile.name || "A").charAt(0)}
               </div>
               <span className="status-badge success">
-                <i /> In progress
+                <i /> {profile.id ? "Synced" : "In progress"}
               </span>
             </div>
             <div className="profile-card-body">
@@ -381,11 +637,15 @@ export function ProfileBuilder() {
               <div className="profile-card-divider" />
               <div className="profile-card-label">YOUR SKILLS</div>
               <div className="tag-list compact-tags">
-                {profile.skills.slice(0, 5).map((skill) => (
-                  <span className="skill-tag" key={skill}>
-                    {skill}
-                  </span>
-                ))}
+                {profile.skills.slice(0, 5).map((skill, i) => {
+                  const sName =
+                    typeof skill === "object" ? skill.skill_name : skill;
+                  return (
+                    <span className="skill-tag" key={`${sName}-${i}`}>
+                      {sName}
+                    </span>
+                  );
+                })}
                 {profile.skills.length > 5 && (
                   <span className="skill-tag">
                     +{profile.skills.length - 5}
@@ -404,8 +664,8 @@ export function ProfileBuilder() {
             <div>
               <b>Make your skills work for you</b>
               <p>
-                Add skills from projects, courses, and experience—not just job
-                titles.
+                Confirm your estimated skill levels to get precise match ratings
+                and gap calculations.
               </p>
             </div>
           </section>
