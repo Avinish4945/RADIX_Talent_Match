@@ -5,6 +5,7 @@ import {
   Activity,
   ArrowRight,
   BriefcaseBusiness,
+  CheckCircle2,
   FileText,
   Sparkles,
   Target,
@@ -13,8 +14,9 @@ import {
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 function formatActivityDate(value) {
+  if (!value) return "Just now";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  if (Number.isNaN(date.getTime())) return "Recently";
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
@@ -25,19 +27,25 @@ function formatActivityDate(value) {
 export function Dashboard() {
   const profile = useSelector((state) => state.app.profile);
   const user = useSelector((state) => state.app.user);
+  const latestReadiness = useSelector(
+    (state) => state.app.latestReadinessResult,
+  );
   const name = user?.name || profile.name || "there";
 
   const jobAnalyses = profile.jobAnalyses || [];
+  const latestMatching = profile.lastMatchingResult;
+
   const activity = useMemo(() => {
     const items = jobAnalyses
       .filter((entry) => entry && typeof entry === "object")
       .map((entry, index) => ({
-        icon: Activity,
-        title: entry.title || "Job description keyword preview",
+        icon: BriefcaseBusiness,
+        title:
+          entry.title || `Job Analysis (${entry.company || "Analyzed Role"})`,
         detail:
-          entry.keywords?.length > 0
-            ? `${entry.keywords.length} supported keyword mentions`
-            : "Local keyword preview",
+          entry.skills?.length > 0
+            ? `${entry.skills.length} skills extracted via LLM`
+            : "JD text analyzed",
         createdAt: entry.createdAt,
         tint: "purple",
         key: `analysis-${entry.createdAt || index}`,
@@ -46,11 +54,33 @@ export function Dashboard() {
     if (profile.resumeExtractedAt) {
       items.push({
         icon: FileText,
-        title: "Resume text extracted",
-        detail: `${profile.resumeName || "Resume"} · ${(profile.resumeTextLength || 0).toLocaleString()} characters`,
+        title: "Resume text & profile extracted",
+        detail: `${profile.resumeName || "Resume"} · ${profile.skills?.length || 0} structured skills mapped`,
         createdAt: profile.resumeExtractedAt,
         tint: "blue",
         key: "resume-extraction",
+      });
+    }
+
+    if (latestMatching?.createdAt) {
+      items.push({
+        icon: Sparkles,
+        title: `Skill match: ${latestMatching.role}`,
+        detail: `${latestMatching.company || "Target Job"} · ${latestMatching.score ?? 0}% match score`,
+        createdAt: latestMatching.createdAt,
+        tint: "pink",
+        key: "skill-matching-activity",
+      });
+    }
+
+    if (latestReadiness) {
+      items.push({
+        icon: Target,
+        title: `Talent check: ${latestReadiness.company}`,
+        detail: `Readiness: ${latestReadiness.readiness_score ?? "N/A"}% · Coverage: ${latestReadiness.coverage_percent ?? 0}%`,
+        createdAt: new Date().toISOString(),
+        tint: "orange",
+        key: "talent-check-activity",
       });
     }
 
@@ -60,22 +90,17 @@ export function Dashboard() {
           new Date(b.createdAt || 0).getTime() -
           new Date(a.createdAt || 0).getTime(),
       )
-      .slice(0, 4);
+      .slice(0, 5);
   }, [
     jobAnalyses,
     profile.resumeExtractedAt,
     profile.resumeName,
-    profile.resumeTextLength,
+    profile.skills,
+    latestMatching,
+    latestReadiness,
   ]);
-  const latestMatching = profile.lastMatchingResult;
+
   const workflow = [
-    {
-      to: "/analytics",
-      label: "Upload JD",
-      detail: "JD Analytics",
-      icon: BriefcaseBusiness,
-      color: "violet",
-    },
     {
       to: "/resume",
       label: "Upload Resume",
@@ -91,18 +116,25 @@ export function Dashboard() {
       color: "green",
     },
     {
+      to: "/analytics",
+      label: "Upload JD",
+      detail: "JD Analytics",
+      icon: BriefcaseBusiness,
+      color: "violet",
+    },
+    {
+      to: "/matching",
+      label: "Match Skills",
+      detail: "Skill Matching",
+      icon: Sparkles,
+      color: "pink",
+    },
+    {
       to: "/talent-check",
       label: "Check Readiness",
       detail: "Talent Check",
       icon: Target,
       color: "amber",
-    },
-    {
-      to: "/matching",
-      label: "Match a Role",
-      detail: "Skill Matching",
-      icon: Sparkles,
-      color: "pink",
     },
   ];
 
@@ -111,33 +143,28 @@ export function Dashboard() {
       <PageHeading
         eyebrow="ANALYZE  ·  BUILD  ·  ASSESS  ·  MATCH"
         title="RADIX Talent Match"
-        description={`Welcome${name !== "there" ? `, ${name.split(" ")[0]}` : ""}. Analyze job descriptions, organize your experience, and discover where your skills fit.`}
+        description={`Welcome${name !== "there" ? `, ${name.split(" ")[0]}` : ""}. Analyze job descriptions, organize your structured profile, and discover where your skills fit.`}
       />
+
       <section className="section-block">
         <div className="section-heading">
           <div>
-            <h2>Start with a workflow</h2>
-            <p>Choose a tool to take the next step.</p>
+            <h2>Integrated Workspace</h2>
+            <p>
+              One shared profile powering all assessment and matching tools.
+            </p>
           </div>
-          <span className="section-step">YOUR WORKSPACE</span>
+          <span className="section-step">
+            ACTIVE PROFILE: {profile.name || "Default"}
+          </span>
         </div>
         <div className="quick-grid">
-          <Link className="quick-card q-blue" to="/analytics">
-            <span className="quick-icon">
-              <Activity size={20} />
-            </span>
-            <b>JD Analytics</b>
-            <p>Extract role, company, and skills from a job description.</p>
-            <span className="quick-link">
-              Analyze a job <ArrowRight size={14} />
-            </span>
-          </Link>
           <Link className="quick-card q-purple" to="/resume">
             <span className="quick-icon">
               <FileText size={20} />
             </span>
             <b>Resume Parsing</b>
-            <p>Turn your PDF or DOCX resume into structured information.</p>
+            <p>Extract structured profile & skills directly from PDF/DOCX.</p>
             <span className="quick-link">
               Parse a resume <ArrowRight size={14} />
             </span>
@@ -147,19 +174,22 @@ export function Dashboard() {
               <UserRound size={20} />
             </span>
             <b>Profile Builder</b>
-            <p>Bring your skills, projects, and experience together.</p>
+            <p>Review and edit skills, categories, and project evidence.</p>
             <span className="quick-link">
-              Build your profile <ArrowRight size={14} />
+              Edit profile ({profile.skills?.length || 0} skills){" "}
+              <ArrowRight size={14} />
             </span>
           </Link>
-          <Link className="quick-card q-orange" to="/talent-check">
+          <Link className="quick-card q-blue" to="/analytics">
             <span className="quick-icon">
-              <Target size={20} />
+              <BriefcaseBusiness size={20} />
             </span>
-            <b>Talent Check</b>
-            <p>Compare assessed skills against a company’s requirements.</p>
+            <b>JD Analytics</b>
+            <p>
+              Extract role, company, and required skills from a job description.
+            </p>
             <span className="quick-link">
-              Check readiness <ArrowRight size={14} />
+              Analyze a job <ArrowRight size={14} />
             </span>
           </Link>
           <Link className="quick-card q-pink" to="/matching">
@@ -167,9 +197,30 @@ export function Dashboard() {
               <Sparkles size={20} />
             </span>
             <b>Skill Matching</b>
-            <p>See how your profile aligns with a specific job role.</p>
+            <p>
+              Deterministic backend matching against target role requirements.
+            </p>
             <span className="quick-link">
-              Match a role <ArrowRight size={14} />
+              {latestMatching
+                ? `Latest: ${latestMatching.score}% match`
+                : "Match a role"}{" "}
+              <ArrowRight size={14} />
+            </span>
+          </Link>
+          <Link className="quick-card q-orange" to="/talent-check">
+            <span className="quick-icon">
+              <Target size={20} />
+            </span>
+            <b>Talent Check</b>
+            <p>
+              Assess readiness against official Google, Microsoft, and Oracle
+              benchmarks.
+            </p>
+            <span className="quick-link">
+              {latestReadiness?.readiness_score != null
+                ? `Readiness: ${latestReadiness.readiness_score}%`
+                : "Check readiness"}{" "}
+              <ArrowRight size={14} />
             </span>
           </Link>
         </div>
@@ -178,8 +229,11 @@ export function Dashboard() {
       <section className="workflow-panel" aria-labelledby="workflow-title">
         <div className="section-heading">
           <div>
-            <h2 id="workflow-title">Complete application flow</h2>
-            <p>Move from a job description to a focused skills match.</p>
+            <h2 id="workflow-title">End-to-End Application Workflow</h2>
+            <p>
+              Follow the 5-step guided path from resume parsing to readiness
+              evaluation.
+            </p>
           </div>
         </div>
         <div className="workflow-steps">
@@ -203,7 +257,7 @@ export function Dashboard() {
           <div className="panel-heading">
             <div>
               <h2>Recent activity</h2>
-              <p>Based on actions recorded in this browser.</p>
+              <p>Actions across your workspace modules.</p>
             </div>
           </div>
           <div className="activity-list">
@@ -229,7 +283,7 @@ export function Dashboard() {
               <div className="activity-empty">
                 <p>No recent activity yet.</p>
                 <span>
-                  Your local previews and resume extractions appear here.
+                  Upload a resume or job description to see your progress here.
                 </span>
               </div>
             )}
@@ -238,37 +292,47 @@ export function Dashboard() {
             Review my profile <ArrowRight size={14} />
           </Link>
         </section>
+
         <section className="panel match-preview">
           <div className="panel-heading">
             <div>
-              <h2>Latest role preview</h2>
+              <h2>Latest Skill Match Result</h2>
               <p>
                 {latestMatching
-                  ? `Target role: ${latestMatching.role}`
-                  : "No role preview run yet"}
+                  ? `${latestMatching.company || "Target Role"}: ${latestMatching.role}`
+                  : "No role matched yet"}
               </p>
             </div>
-            <span className="status-badge">Sample data</span>
+            <span className="status-badge success">
+              {latestMatching?.score != null
+                ? `${latestMatching.score}% Match`
+                : "Connected"}
+            </span>
           </div>
           <div className="match-preview-empty">
             <div className="soft-icon purple">
               <Sparkles size={19} />
             </div>
             {latestMatching ? (
-              <p>
-                {latestMatching.count} sample role
-                {latestMatching.count === 1 ? "" : "s"} were available for this
-                role preview.
-              </p>
+              <div>
+                <b style={{ fontSize: "28px", color: "#6841cf" }}>
+                  {latestMatching.score}%
+                </b>
+                <p style={{ margin: "4px 0 0" }}>
+                  {latestMatching.summary
+                    ? `${latestMatching.summary.matched} skills matched, ${latestMatching.summary.missing} missing`
+                    : `Evaluated against ${latestMatching.role}`}
+                </p>
+              </div>
             ) : (
               <p>
-                Compare your profile skills with a small illustrative role
-                dataset.
+                Run the backend Skill Matching engine against official Google,
+                Microsoft, or Oracle roles.
               </p>
             )}
           </div>
           <Link className="panel-footer-link" to="/matching">
-            View sample roles <ArrowRight size={14} />
+            Open Skill Matching <ArrowRight size={14} />
           </Link>
         </section>
       </div>

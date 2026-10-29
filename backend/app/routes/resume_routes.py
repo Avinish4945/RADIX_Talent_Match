@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app.services.document_parser import extract_text
+from app.services.resume_parser import parse_resume_to_structured_profile
 
 router = APIRouter()
 
@@ -52,9 +53,16 @@ async def parse_resume(file: UploadFile = File(...)):
                     detail="Unable to extract readable text from this resume.",
                 ) from error
 
+        structured_profile = await run_in_threadpool(
+            parse_resume_to_structured_profile,
+            extracted_text,
+            filename,
+        )
+
         return {
             "filename": filename,
             "extracted_text": extracted_text,
+            "profile": structured_profile.model_dump(),
         }
     finally:
         await file.close()

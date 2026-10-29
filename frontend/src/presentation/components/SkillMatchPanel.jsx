@@ -2,9 +2,22 @@ import { useState } from "react";
 import { runSkillMatch } from "../../infrastructure/api/skillMatch";
 
 const styles = {
-  card: { border: "1px solid #ddd", borderRadius: 8, padding: 16, background: "#fff", color: "#222" },
+  card: {
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    padding: 16,
+    background: "#fff",
+    color: "#222",
+  },
   title: { margin: "0 0 8px", fontSize: 18 },
-  button: { padding: "8px 16px", borderRadius: 6, border: "none", background: "#4f46e5", color: "#fff", cursor: "pointer" },
+  button: {
+    padding: "8px 16px",
+    borderRadius: 6,
+    border: "none",
+    background: "#4f46e5",
+    color: "#fff",
+    cursor: "pointer",
+  },
   error: { color: "#b91c1c", marginTop: 8 },
   score: { fontSize: 32, fontWeight: 700, margin: "12px 0 4px" },
   section: { marginTop: 12 },
@@ -49,10 +62,16 @@ export default function SkillMatchPanel({
   return (
     <div style={styles.card}>
       <h3 style={styles.title}>Skill Match</h3>
-      <button style={styles.button} onClick={handleRun} disabled={loading || jdSkills.length === 0}>
+      <button
+        style={styles.button}
+        onClick={handleRun}
+        disabled={loading || jdSkills.length === 0}
+      >
         {loading ? "Matching..." : "Run skill match"}
       </button>
-      {jdSkills.length === 0 && <div style={styles.muted}>No JD skills yet.</div>}
+      {jdSkills.length === 0 && (
+        <div style={styles.muted}>No JD skills yet.</div>
+      )}
       {error && <div style={styles.error}>{error}</div>}
 
       {result && (
@@ -69,7 +88,10 @@ export default function SkillMatchPanel({
               {result.matched_skills.map((m) => (
                 <li key={m.skill_name}>
                   {m.skill_name} ({m.match_type}
-                  {m.candidate_skill !== m.skill_name ? `: ${m.candidate_skill}` : ""})
+                  {m.candidate_skill !== m.skill_name
+                    ? `: ${m.candidate_skill}`
+                    : ""}
+                  )
                 </li>
               ))}
             </ul>
@@ -93,7 +115,8 @@ export default function SkillMatchPanel({
             <ul style={styles.list}>
               {result.missing_skills.map((m) => (
                 <li key={m.skill_name}>
-                  {m.skill_name} - priority {m.priority} ({m.recommendation_tag})
+                  {m.skill_name} - priority {m.priority} ({m.recommendation_tag}
+                  )
                 </li>
               ))}
             </ul>

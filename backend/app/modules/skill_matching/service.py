@@ -12,7 +12,17 @@ import re
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
-from rapidfuzz import fuzz
+try:
+    from rapidfuzz import fuzz
+except ImportError:
+    import difflib
+
+    class _FuzzFallback:
+        @staticmethod
+        def ratio(s1: str, s2: str) -> float:
+            return difflib.SequenceMatcher(None, str(s1 or ""), str(s2 or "")).ratio() * 100.0
+
+    fuzz = _FuzzFallback()
 
 CATEGORY_CODES = {
     "COD", "DSA", "OOD", "APTI", "COMM", "AI", "CLOUD",

@@ -44,10 +44,13 @@ def test_skill_without_explicit_level_is_unknown():
     assert candidate_levels({"skills": [skill]}) == {}
 
 
-def test_synthetic_fixture_is_explicitly_non_official():
+def test_official_company_skillsets_fixture():
     root = Path(__file__).resolve().parents[2]
     fixture = root / "data" / "talent_check_company_skillsets.json"
     payload = json.loads(fixture.read_text(encoding="utf-8"))
 
-    assert payload["_metadata"]["official"] is False
+    assert payload["_metadata"]["official"] is True
+    assert "Google LLC" in payload["companies"]
+    assert "Microsoft" in payload["companies"]
+    assert "Oracle" in payload["companies"]
     assert "Example Company" in payload["companies"]

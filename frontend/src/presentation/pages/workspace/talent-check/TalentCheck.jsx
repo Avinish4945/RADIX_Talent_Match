@@ -87,7 +87,7 @@ export function TalentCheck() {
       if (candidateResponse.status === "fulfilled") {
         const availableCandidates = candidateResponse.value.candidates || [];
         setCandidates(availableCandidates);
-        setCandidateId(availableCandidates[0]?.id || "");
+        setCandidateId("active-profile");
         setCandidateError(
           availableCandidates.length
             ? ""
@@ -106,15 +106,22 @@ export function TalentCheck() {
     };
   }, [extractedCompanies, optionsAttempt]);
 
+  const activeProfile = useSelector((state) => state.app.profile);
+
   async function runTalentCheck() {
     setChecking(true);
     setApiError("");
     setResult(null);
 
     try {
+      const body =
+        candidateId === "active-profile"
+          ? { profile: activeProfile, company }
+          : { candidate_id: candidateId, company };
+
       const response = await apiRequest("/talent-check/", {
         method: "POST",
-        body: { candidate_id: candidateId, company },
+        body,
       });
       setResult(response);
       dispatch(markReadinessChecked(response));
@@ -213,6 +220,10 @@ export function TalentCheck() {
                     : "No candidates available"}
                 </option>
               )}
+              <option value="active-profile">
+                ★ My Active Profile (
+                {activeProfile?.name || "Workspace Profile"})
+              </option>
               {candidates.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
                   {candidate.name}

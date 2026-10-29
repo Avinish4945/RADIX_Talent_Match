@@ -32,11 +32,42 @@ def test_resume_parse_returns_text_from_uploaded_file(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "filename": "mira-resume.pdf",
-        "extracted_text": "Mira Shah\nProduct Designer\nFigma and user research",
-    }
+    data = response.json()
+    assert data["filename"] == "mira-resume.pdf"
+    assert data["extracted_text"] == "Mira Shah\nProduct Designer\nFigma and user research"
+    assert "profile" in data
+    assert data["profile"]["name"] == "Mira Shah"
     assert not Path(observed["path"]).exists()
+
+
+def test_resume_parse_returns_structured_profile(monkeypatch):
+    def sample_resume(_path):
+        return (
+            "Ananya Rao\n"
+            "Education\n"
+            "B.Tech, Computer Science and Engineering, Class of 2026\n"
+            "Technical Skills\n"
+            "Python, C++, Data Structures & Algorithms, SQL\n"
+            "Projects\n"
+            "Distributed URL Shortener: Built scalable service\n"
+            "Preferred Roles\n"
+            "Software Engineer\n"
+        )
+
+    monkeypatch.setattr(resume_routes, "extract_text", sample_resume)
+
+    response = CLIENT.post(
+        "/api/resume/parse",
+        files={"file": ("ananya.pdf", b"pdf content", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    profile = response.json()["profile"]
+    assert profile["name"] == "Ananya Rao"
+    assert len(profile["skills"]) >= 3
+    skill_names = [s["skill_name"] for s in profile["skills"]]
+    assert any("Python" in s for s in skill_names)
+    assert any("Data Structures" in s for s in skill_names)
 
 
 def test_resume_parse_rejects_unsupported_extension():

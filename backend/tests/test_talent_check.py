@@ -52,9 +52,12 @@ def test_company_and_candidate_selection_options(monkeypatch):
     assert companies.status_code == 200
     assert companies.json() == {"companies": ["Northstar Tech", "DataForge"]}
     assert candidates.status_code == 200
-    assert candidates.json() == {
-        "candidates": [{"id": "demo-candidate", "name": "Demo Candidate"}]
-    }
+    candidate_ids = [c["id"] for c in candidates.json()["candidates"]]
+    assert "demo-candidate" in candidate_ids
+    assert "ananya-rao" in candidate_ids
+    assert "karthik-subramaniam" in candidate_ids
+    assert "priya-menon" in candidate_ids
+    assert "rohan-verma" in candidate_ids
 
 
 def test_company_options_return_503_when_dataset_is_missing(monkeypatch):
@@ -316,12 +319,42 @@ def test_legacy_string_skill_is_not_guessed_as_proficiency():
     assert candidate_levels({"skills": ["Python", "SQL"]}) == {}
 
 
-def test_synthetic_fixture_is_explicitly_non_official():
+def test_official_company_skillsets_fixture():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
     fixture = root / "data" / "talent_check_company_skillsets.json"
     payload = json.loads(fixture.read_text(encoding="utf-8"))
 
-    assert payload["_metadata"]["official"] is False
+    assert payload["_metadata"]["official"] is True
+    assert "Google LLC" in payload["companies"]
+    assert "Microsoft" in payload["companies"]
+    assert "Oracle" in payload["companies"]
     assert "Example Company" in payload["companies"]
+
+
+def test_talent_check_with_direct_profile_payload(tmp_path, monkeypatch):
+    dataset = write_dataset(tmp_path / "companies.json", {"Google LLC": REQUIREMENTS})
+    monkeypatch.setattr(
+        talent_check_routes,
+        "run_talent_check",
+        lambda profile, company: run_talent_check(profile, company, dataset),
+    )
+
+    response = CLIENT.post(
+        "/api/talent-check/",
+        json={
+            "profile": {
+                "skills": [
+                    {"category_code": "COD", "level": 9},
+                    {"category_code": "DSA", "level": 8},
+                    {"category_code": "SQL", "level": 7},
+                ]
+            },
+            "company": "Google LLC",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["readiness_score"] == 100
+    assert response.json()["company"] == "Google LLC"

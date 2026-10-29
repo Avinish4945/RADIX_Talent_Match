@@ -1,10 +1,140 @@
 {
   "_metadata": {
-    "official": false,
-    "purpose": "Synthetic development fixture only; not real company requirements.",
-    "warning": "Replace with organizer-provided data before an official demonstration."
+    "official": true,
+    "purpose": "Official company skill requirements derived from organizer job descriptions for Google LLC, Microsoft, and Oracle.",
+    "warning": "Organizer requirements aligned with hackathon benchmark roles."
   },
   "companies": {
+    "Google LLC": [
+      {
+        "category_code": "COD",
+        "required_level": 8
+      },
+      {
+        "category_code": "DSA",
+        "required_level": 9
+      },
+      {
+        "category_code": "SYSD",
+        "required_level": 8
+      },
+      {
+        "category_code": "SWE",
+        "required_level": 8
+      },
+      {
+        "category_code": "OOD",
+        "required_level": 7
+      },
+      {
+        "category_code": "OS",
+        "required_level": 7
+      },
+      {
+        "category_code": "NETW",
+        "required_level": 7
+      },
+      {
+        "category_code": "SQL",
+        "required_level": 8
+      },
+      {
+        "category_code": "AI",
+        "required_level": 8
+      },
+      {
+        "category_code": "APTI",
+        "required_level": 8
+      },
+      {
+        "category_code": "COMM",
+        "required_level": 8
+      }
+    ],
+    "Microsoft": [
+      {
+        "category_code": "COD",
+        "required_level": 8
+      },
+      {
+        "category_code": "DSA",
+        "required_level": 8
+      },
+      {
+        "category_code": "SWE",
+        "required_level": 8
+      },
+      {
+        "category_code": "SQL",
+        "required_level": 8
+      },
+      {
+        "category_code": "CLOUD",
+        "required_level": 8
+      },
+      {
+        "category_code": "SYSD",
+        "required_level": 8
+      },
+      {
+        "category_code": "OOD",
+        "required_level": 7
+      },
+      {
+        "category_code": "OS",
+        "required_level": 7
+      },
+      {
+        "category_code": "APTI",
+        "required_level": 8
+      },
+      {
+        "category_code": "AI",
+        "required_level": 7
+      },
+      {
+        "category_code": "COMM",
+        "required_level": 7
+      }
+    ],
+    "Oracle": [
+      {
+        "category_code": "COD",
+        "required_level": 7
+      },
+      {
+        "category_code": "SQL",
+        "required_level": 7
+      },
+      {
+        "category_code": "DSA",
+        "required_level": 6
+      },
+      {
+        "category_code": "OOD",
+        "required_level": 6
+      },
+      {
+        "category_code": "OS",
+        "required_level": 7
+      },
+      {
+        "category_code": "NETW",
+        "required_level": 6
+      },
+      {
+        "category_code": "APTI",
+        "required_level": 7
+      },
+      {
+        "category_code": "COMM",
+        "required_level": 7
+      },
+      {
+        "category_code": "SWE",
+        "required_level": 6
+      }
+    ],
     "Example Company": [
       {
         "category_code": "COD",

@@ -7,9 +7,13 @@ import {
   CheckCircle2,
   FileText,
   ShieldCheck,
+  Sparkles,
   WandSparkles,
 } from "lucide-react";
-import { saveResumeExtraction } from "../../../../application/store/appSlice";
+import {
+  saveResumeExtraction,
+  updateProfile,
+} from "../../../../application/store/appSlice";
 import {
   PageHeading,
   UploadCard,
@@ -20,14 +24,16 @@ export function ResumeParsing() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
-  const [parsed, setParsed] = useState(false);
+  const [parsed, setParsed] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   function selectFile(file) {
     setSelectedFile(file);
-    setParsed(false);
+    setParsed(null);
     setError("");
   }
+
   async function parse() {
     if (!selectedFile) return;
     setLoading(true);
@@ -48,18 +54,40 @@ export function ResumeParsing() {
           textLength: response.extracted_text.length,
         }),
       );
+
+      if (response.profile) {
+        const p = response.profile;
+        const edu =
+          Array.isArray(p.education) && p.education[0] ? p.education[0] : {};
+        dispatch(
+          updateProfile({
+            name: p.name || undefined,
+            email: p.email || undefined,
+            education: edu.degree || "",
+            university: edu.university || "",
+            year: edu.year || "",
+            skills: p.skills || [],
+            role: (p.preferred_roles && p.preferred_roles[0]) || "",
+            projects: p.projects || [],
+            experience: p.internships || [],
+            certifications: p.certifications || [],
+            preferred_roles: p.preferred_roles || [],
+          }),
+        );
+      }
     } catch (requestError) {
       setError(requestError.message);
     } finally {
       setLoading(false);
     }
   }
+
   return (
     <div className="page">
       <PageHeading
         eyebrow="YOUR EXPERIENCE, ORGANIZED"
         title="Resume Parsing"
-        description="Extract readable text from your PDF or Word resume and review it before updating your profile."
+        description="Extract readable text and structured profile data from your PDF or Word resume."
         action={
           <span className="secure-note">
             <ShieldCheck size={16} /> Temporary upload
@@ -73,8 +101,8 @@ export function ResumeParsing() {
               <span className="step-badge">01</span>
               <h2>Upload your resume</h2>
               <p>
-                Your file is processed for text extraction and is not saved by
-                this service.
+                Your file is processed for text extraction and structured
+                profile mapping.
               </p>
             </div>
           </div>
@@ -92,10 +120,10 @@ export function ResumeParsing() {
           )}
           <div className="upload-trust">
             <span>
-              <Check size={14} /> Temporary file removed after extraction
+              <Check size={14} /> Structured profile populated automatically
             </span>
             <span>
-              <Check size={14} /> Text reviewed before profile changes
+              <Check size={14} /> Skills mapped to canonical RADIX categories
             </span>
             <span>
               <Check size={14} /> Takes just a moment
@@ -107,10 +135,10 @@ export function ResumeParsing() {
             onClick={parse}
           >
             {loading ? (
-              "Extracting resume text..."
+              "Extracting resume data..."
             ) : (
               <>
-                <WandSparkles size={16} /> Extract text
+                <WandSparkles size={16} /> Extract structured profile
               </>
             )}
           </button>
@@ -119,7 +147,9 @@ export function ResumeParsing() {
           <div className="panel-heading">
             <div>
               <h3>What you’ll get</h3>
-              <p>Readable text from a text-based PDF or DOCX file.</p>
+              <p>
+                Structured profile data automatically mapped to your workspace.
+              </p>
             </div>
             <div className="soft-icon blue">
               <FileText size={18} />
@@ -127,13 +157,21 @@ export function ResumeParsing() {
           </div>
           <div className="preview-list">
             {[
-              ["Resume text", "Extracted from readable document content"],
-              ["Original filename", "Shown with the extracted text"],
-              ["Character count", "Approximate length of extracted text"],
-              ["Text preview", "Review before making profile changes"],
               [
-                "No automatic edits",
-                "Your profile is not changed by extraction",
+                "Structured skills",
+                "Categorized into COD, DSA, SYS, SQL, AI, etc.",
+              ],
+              [
+                "Proficiency levels",
+                "Estimated 0-10 levels with evidence quotes",
+              ],
+              [
+                "Education & projects",
+                "Extracted and mapped to your Profile Builder",
+              ],
+              [
+                "Shared across modules",
+                "Feeds Skill Matching and Talent Check immediately",
               ],
             ].map(([title, desc]) => (
               <div key={title}>
@@ -150,37 +188,168 @@ export function ResumeParsing() {
           <div className="privacy-copy">
             <ShieldCheck size={16} />
             <span>
-              Text extraction runs through your configured RADIX backend. A
-              temporary file is removed after extraction.
+              Text extraction runs through your configured RADIX backend.
+              Temporary files are safely cleaned up.
             </span>
           </div>
         </aside>
       </div>
+
       {parsed && (
         <section className="panel parsed-result">
           <div className="results-header">
             <div>
-              <span className="eyebrow">TEXT EXTRACTED</span>
+              <span className="eyebrow">STRUCTURED DATA EXTRACTED</span>
               <h2>{parsed.filename}</h2>
               <p>
                 {parsed.extracted_text.length.toLocaleString()} characters
-                extracted. Review the text before updating your profile.
+                extracted.
+                {parsed.profile?.skills?.length
+                  ? ` Found ${parsed.profile.skills.length} categorized skills.`
+                  : ""}
               </p>
             </div>
             <span className="status-badge success">
               <CheckCircle2 size={15} /> Extraction complete
             </span>
           </div>
+
+          {parsed.profile && (
+            <div
+              className="parsed-profile-summary"
+              style={{
+                margin: "16px 0",
+                padding: "16px",
+                background: "#faf8ff",
+                borderRadius: "10px",
+                border: "1px solid #e4def5",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "18px", color: "#221c45" }}>
+                    {parsed.profile.name}
+                  </h3>
+                  <span style={{ fontSize: "13px", color: "#6b678c" }}>
+                    {parsed.profile.email} ·{" "}
+                    {parsed.profile.preferred_roles?.join(", ") || "Candidate"}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: "12px",
+                    background: "#f0ebff",
+                    color: "#6740cf",
+                    padding: "4px 10px",
+                    borderRadius: "20px",
+                    fontWeight: "600",
+                  }}
+                >
+                  Profile Synced
+                </span>
+              </div>
+
+              {parsed.profile.skills && parsed.profile.skills.length > 0 && (
+                <div style={{ marginTop: "12px" }}>
+                  <p
+                    style={{
+                      margin: "0 0 8px 0",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#443f66",
+                    }}
+                  >
+                    Extracted Skills ({parsed.profile.skills.length}):
+                  </p>
+                  <div
+                    style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
+                  >
+                    {parsed.profile.skills.map((s, idx) => {
+                      const name = typeof s === "object" ? s.skill_name : s;
+                      const cat = typeof s === "object" ? s.category_code : "";
+                      const lvl =
+                        typeof s === "object" && s.level != null
+                          ? `Lvl ${s.level}`
+                          : "";
+                      return (
+                        <span
+                          key={idx}
+                          style={{
+                            background: "#fff",
+                            border: "1px solid #dcd7f2",
+                            borderRadius: "6px",
+                            padding: "3px 8px",
+                            fontSize: "12px",
+                            color: "#302b52",
+                          }}
+                        >
+                          <b>{name}</b>{" "}
+                          {cat && (
+                            <span
+                              style={{ color: "#7456d6", fontSize: "11px" }}
+                            >
+                              [{cat}]
+                            </span>
+                          )}{" "}
+                          {lvl && (
+                            <span
+                              style={{
+                                color: "#199568",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {lvl}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <details className="extracted-text">
-            <summary>Review extracted text</summary>
+            <summary>Review raw extracted text</summary>
             <pre>{parsed.extracted_text}</pre>
           </details>
-          <button
-            className="button button-primary"
-            onClick={() => navigate("/profile")}
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginTop: "16px",
+              flexWrap: "wrap",
+            }}
           >
-            Continue to My profile <ArrowRight size={15} />
-          </button>
+            <button
+              className="button button-primary"
+              onClick={() => navigate("/profile")}
+            >
+              Review in Profile Builder <ArrowRight size={15} />
+            </button>
+            <button
+              className="button button-outline"
+              onClick={() => navigate("/matching")}
+            >
+              Match with Target Jobs <Sparkles size={15} />
+            </button>
+            <button
+              className="button button-outline"
+              onClick={() => navigate("/talent-check")}
+            >
+              Check Company Readiness
+            </button>
+          </div>
         </section>
       )}
     </div>

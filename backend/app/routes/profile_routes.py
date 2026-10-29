@@ -8,8 +8,14 @@ router = APIRouter()
 
 @router.post("/api/profiles")
 def create_profile(profile: CandidateProfile) -> dict[str, str]:
-    profile_id = profile_service.save_profile(profile)
-    return {"id": profile_id, "message": "Profile saved successfully"}
+    try:
+        profile_id = profile_service.save_profile(profile)
+        return {"id": profile_id, "message": "Profile saved successfully"}
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save profile. An internal error occurred.",
+        ) from None
 
 
 @router.get("/api/profiles/{profile_id}")

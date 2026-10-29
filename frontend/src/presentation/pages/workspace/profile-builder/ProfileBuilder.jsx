@@ -79,16 +79,26 @@ export function ProfileBuilder() {
     const skill = skillInput.trim();
     if (
       !skill ||
-      profile.skills.some((item) => item.toLowerCase() === skill.toLowerCase())
+      profile.skills.some((item) => {
+        const name = typeof item === "object" ? item.skill_name : item;
+        return name.toLowerCase() === skill.toLowerCase();
+      })
     )
       return;
     dispatch(updateProfile({ skills: [...profile.skills, skill] }));
     setSkillInput("");
   }
-  function removeSkill(skill) {
+  function removeSkill(skillToRemove) {
+    const targetName =
+      typeof skillToRemove === "object"
+        ? skillToRemove.skill_name
+        : skillToRemove;
     dispatch(
       updateProfile({
-        skills: profile.skills.filter((item) => item !== skill),
+        skills: profile.skills.filter((item) => {
+          const name = typeof item === "object" ? item.skill_name : item;
+          return name !== targetName;
+        }),
       }),
     );
   }
@@ -188,18 +198,51 @@ export function ProfileBuilder() {
                   <span>Skills help us find roles that fit you.</span>
                 </p>
                 <div className="editable-tags">
-                  {profile.skills.map((skill) => (
-                    <span className="editable-tag" key={skill}>
-                      {skill}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${skill}`}
-                        onClick={() => removeSkill(skill)}
-                      >
-                        <X size={13} />
-                      </button>
-                    </span>
-                  ))}
+                  {profile.skills.map((skill, index) => {
+                    const name =
+                      typeof skill === "object" ? skill.skill_name : skill;
+                    const cat =
+                      typeof skill === "object" ? skill.category_code : null;
+                    const lvl =
+                      typeof skill === "object" && skill.level != null
+                        ? skill.level
+                        : null;
+                    return (
+                      <span className="editable-tag" key={`${name}-${index}`}>
+                        <b>{name}</b>
+                        {cat && (
+                          <small
+                            style={{
+                              marginLeft: 4,
+                              color: "#6841cf",
+                              fontSize: "10px",
+                            }}
+                          >
+                            [{cat}]
+                          </small>
+                        )}
+                        {lvl != null && (
+                          <small
+                            style={{
+                              marginLeft: 4,
+                              color: "#199568",
+                              fontWeight: "600",
+                              fontSize: "10px",
+                            }}
+                          >
+                            Lvl {lvl}
+                          </small>
+                        )}
+                        <button
+                          type="button"
+                          aria-label={`Remove ${name}`}
+                          onClick={() => removeSkill(skill)}
+                        >
+                          <X size={13} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
                 <div className="add-skill-form">
                   <input
