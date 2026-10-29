@@ -1,5 +1,16 @@
-# Backend module ownership
+# Feature modules
 
-Each module owner keeps module-specific business logic and tests inside their module folder. Register HTTP routers in `backend/app/routes/` and include them in `backend/app/main.py` only after the module exposes a stable contract.
+Each folder in this directory represents a backend feature and owns its
+business logic. Keep HTTP endpoints in `app/routes/`, shared integrations in
+`app/services/`, and shared Pydantic contracts in `app/schemas/`.
 
-Current JD Analytics code remains in `backend/app/routes/jd_routes.py` and `backend/app/services/` until it can be moved safely. Do not perform broad file moves during the hackathon without checking imports and testing the full flow.
+The backend entry point and full directory guide are documented in
+[`../README.md`](../README.md).
+
+Current feature areas:
+
+- `jd_analytics/` — job description analysis
+- `resume_parsing/` — resume parsing
+- `profile_builder/` — candidate profile workflows
+- `talent_check/` — company readiness assessment and scoring
+- `skill_matching/` — candidate-to-job skill matching

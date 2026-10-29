@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 """Talent Check route supporting shared candidate profiles and official benchmarks."""
 import os
 from typing import Any, Dict
+=======
+>>>>>>> 8cf6984 (api link)
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.talent_check import TalentCheckRequest, TalentCheckResponse
@@ -9,12 +12,15 @@ from app.modules.talent_check.service import (
     CompanyDatasetError,
     CompanyNotFoundError,
     load_company_names,
+    load_job_description,
+    run_jd_presence_check,
     run_talent_check,
 )
 from app.services import profile_service
 
 router = APIRouter()
 
+<<<<<<< HEAD
 # Official organizer candidate profiles & demo profile
 CANDIDATE_PROFILES: Dict[str, Dict[str, Any]] = {
     "demo-candidate": {
@@ -98,30 +104,51 @@ def get_candidate_profile(candidate_id: str) -> Dict[str, Any]:
         pass
 
     raise KeyError(candidate_id)
+=======
+
+def get_candidate_profile(candidate_id: str) -> dict:
+    profile = profile_service.get_profile_by_id(candidate_id)
+    if not profile:
+        raise KeyError(candidate_id)
+    return profile
+
+>>>>>>> 8cf6984 (api link)
 
 
 @router.get("/companies")
 def get_companies():
     try:
         return {"companies": load_company_names()}
+<<<<<<< HEAD
     except FileNotFoundError as e:
         raise HTTPException(503, detail=str(e))
     except CompanyDatasetError as e:
         raise HTTPException(422, detail=str(e))
+=======
+    except FileNotFoundError as error:
+        raise HTTPException(503, detail=str(error)) from error
+    except CompanyDatasetError as error:
+        raise HTTPException(422, detail=str(error)) from error
+>>>>>>> 8cf6984 (api link)
 
 
 @router.get("/candidates")
 def get_candidates():
+<<<<<<< HEAD
     enabled = os.getenv("RADIX_USE_MOCK_PROFILES", "true").lower() in {"1", "true", "yes"}
     candidates = [
         {"id": profile["id"], "name": profile["name"]}
         for profile in CANDIDATE_PROFILES.values()
     ] if enabled else []
     return {"candidates": candidates}
+=======
+    return {"candidates": profile_service.list_profiles()}
+>>>>>>> 8cf6984 (api link)
 
 
 @router.post("/", response_model=TalentCheckResponse)
 def talent_check(payload: TalentCheckRequest):
+<<<<<<< HEAD
     profile = None
     if payload.profile:
         profile = payload.profile
@@ -141,3 +168,36 @@ def talent_check(payload: TalentCheckRequest):
         raise HTTPException(404, detail=str(e))
     except (CompanyDatasetError, TalentCheckValidationError) as e:
         raise HTTPException(422, detail=str(e))
+=======
+    try:
+        candidate = get_candidate_profile(payload.candidate_id)
+        if payload.jd_id:
+            job_description = load_job_description(payload.jd_id)
+            if not job_description:
+                raise HTTPException(404, detail="Job description not found")
+            jd_company = (job_description.get("company") or "").strip()
+            if jd_company.casefold() != payload.company.strip().casefold():
+                raise HTTPException(
+                    422,
+                    detail="Selected job description does not belong to this company",
+                )
+            jd_skills = job_description.get("skills") or []
+            if not jd_skills:
+                raise HTTPException(
+                    422,
+                    detail="Selected job description has no extracted skills",
+                )
+            return run_jd_presence_check(candidate, payload.company, jd_skills)
+        return run_talent_check(candidate, payload.company)
+    except KeyError as error:
+        raise HTTPException(
+            404,
+            detail=f"Candidate '{payload.candidate_id}' not found",
+        ) from error
+    except FileNotFoundError as error:
+        raise HTTPException(503, detail=str(error)) from error
+    except CompanyNotFoundError as error:
+        raise HTTPException(404, detail=str(error)) from error
+    except (CompanyDatasetError, TalentCheckValidationError) as error:
+        raise HTTPException(422, detail=str(error)) from error
+>>>>>>> 8cf6984 (api link)

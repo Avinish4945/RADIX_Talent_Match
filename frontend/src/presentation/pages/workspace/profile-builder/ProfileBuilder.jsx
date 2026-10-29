@@ -17,7 +17,15 @@ import {
   addProfileEntry,
   updateProfile,
 } from "../../../../application/store/appSlice";
+<<<<<<< HEAD
 import { saveProfileToApi } from "../../../../infrastructure/api/profileApi";
+=======
+import {
+  createProfile,
+  toProfilePayload,
+  updateProfile as updateProfileApi,
+} from "../../../../infrastructure/api/profile";
+>>>>>>> 8cf6984 (api link)
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 const profileTabs = [
@@ -35,6 +43,7 @@ export function ProfileBuilder() {
   const [skillInput, setSkillInput] = useState("");
   const [entryTitle, setEntryTitle] = useState("");
   const [entryDescription, setEntryDescription] = useState("");
+<<<<<<< HEAD
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
 
@@ -108,6 +117,47 @@ export function ProfileBuilder() {
     } finally {
       setIsSaving(false);
       window.setTimeout(() => setSaveResult(null), 5000);
+=======
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  async function submit(event) {
+    event.preventDefault();
+    let updatedProfile = profile;
+    if (tab !== "Personal info") {
+      updatedProfile = profile;
+    } else {
+      const data = new FormData(event.currentTarget);
+      updatedProfile = {
+        ...profile,
+        name: data.get("name"),
+        email: data.get("email"),
+        education: data.get("education"),
+        university: data.get("university"),
+        year: data.get("year"),
+        role: data.get("role"),
+      };
+      dispatch(updateProfile(updatedProfile));
+    }
+
+    setSaving(true);
+    setSaveError("");
+    try {
+      const payload = toProfilePayload(updatedProfile);
+      const response = updatedProfile.backendProfileId
+        ? await updateProfileApi(updatedProfile.backendProfileId, payload)
+        : await createProfile(payload);
+      if (!updatedProfile.backendProfileId) {
+        dispatch(updateProfile({ backendProfileId: response.id }));
+      }
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (requestError) {
+      setSaveError(requestError.message);
+    } finally {
+      setSaving(false);
+>>>>>>> 8cf6984 (api link)
     }
   }
 
@@ -129,6 +179,10 @@ export function ProfileBuilder() {
     );
     setEntryTitle("");
     setEntryDescription("");
+<<<<<<< HEAD
+=======
+    setSaved(false);
+>>>>>>> 8cf6984 (api link)
   }
 
   function addSkill(event) {
@@ -156,6 +210,7 @@ export function ProfileBuilder() {
 
     dispatch(updateProfile({ skills: [...profile.skills, newSkillObj] }));
     setSkillInput("");
+    setSaved(false);
   }
 
   function removeSkill(skillToRemove) {
@@ -171,6 +226,7 @@ export function ProfileBuilder() {
         }),
       }),
     );
+    setSaved(false);
   }
 
   function updateSkillLevel(index, newLevel) {
@@ -573,6 +629,7 @@ export function ProfileBuilder() {
             )}
             <div className="profile-form-footer">
               <span>
+<<<<<<< HEAD
                 {isSaving ? (
                   <span
                     className="saving-message"
@@ -603,6 +660,16 @@ export function ProfileBuilder() {
                 ) : profile.id ? (
                   <span style={{ color: "#64748b", fontSize: "12.5px" }}>
                     Database ID: <b>{profile.id.slice(0, 8)}...</b> · Synced
+=======
+                {saveError && (
+                  <span className="form-error" role="alert">
+                    Could not save profile: {saveError}
+                  </span>
+                )}
+                {saved ? (
+                  <span className="saved-message">
+                    <CheckCircle2 size={15} /> Profile saved to backend
+>>>>>>> 8cf6984 (api link)
                   </span>
                 ) : (
                   "Your profile is stored securely in the database."
@@ -611,10 +678,16 @@ export function ProfileBuilder() {
               <button
                 className="button button-primary"
                 type="submit"
+<<<<<<< HEAD
                 disabled={isSaving}
               >
                 <Check size={16} />{" "}
                 {isSaving ? "Saving..." : "Save profile to database"}
+=======
+                disabled={saving}
+              >
+                <Check size={16} /> {saving ? "Saving..." : "Save profile"}
+>>>>>>> 8cf6984 (api link)
               </button>
             </div>
           </form>

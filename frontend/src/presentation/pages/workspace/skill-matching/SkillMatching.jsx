@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
-  AlertCircle,
   ArrowRight,
   CheckCircle2,
-  HelpCircle,
   Lightbulb,
   Search,
   Sparkles,
@@ -13,481 +11,460 @@ import {
   XCircle,
 } from "lucide-react";
 import { setMatchingResults } from "../../../../application/store/appSlice";
+import { getProfile } from "../../../../infrastructure/api/profile";
 import { runSkillMatch } from "../../../../infrastructure/api/skillMatch";
-import { jobs } from "../../../../infrastructure/demo/demoData";
+import { getJobDescriptions } from "../job-analytics/jdApi";
 import { PageHeading } from "../../../components/shared/PagePrimitives";
+import { PieChart } from "../../../components/shared/PieChart";
+
+const EMPTY_SKILLS = [];
+
+function MatchSkills({ title, skills, type }) {
+  const Icon = type === "missing" ? XCircle : CheckCircle2;
+
+  return (
+    <section className={`match-outcome match-outcome-${type}`}>
+      <h3>
+        <Icon size={16} />
+        {title} <span>{skills.length}</span>
+      </h3>
+      {skills.length ? (
+        <div className="match-outcome-list">
+          {skills.map((skill) => (
+            <article
+              className="match-outcome-skill"
+              key={`${skill.category_code}-${skill.skill_name}`}
+            >
+              <div>
+                <b>{skill.skill_name}</b>
+                <span className="status-badge">{skill.category_code}</span>
+              </div>
+              {skill.candidate_skill && (
+                <p>
+                  Profile match: {skill.candidate_skill}
+                  {skill.match_type === "partial" ? " · partial" : ""}
+                </p>
+              )}
+              {skill.evidence && <small>{skill.evidence}</small>}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="preview-guidance">None</p>
+      )}
+    </section>
+  );
+}
 
 export function SkillMatching() {
   const profile = useSelector((state) => state.app.profile);
-  const [role, setRole] = useState("Software Engineer");
-  const [query, setQuery] = useState("");
-  const [matches, setMatches] = useState([]);
-  const [hasRun, setHasRun] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [selectedJob, setSelectedJob] = useState(null);
   const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedJobId = searchParams.get("jdId") || "";
+  const [jobDescriptions, setJobDescriptions] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState("");
+  const [candidateProfile, setCandidateProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(
+    Boolean(profile.backendProfileId),
+  );
+  const [profileError, setProfileError] = useState("");
+  const [matching, setMatching] = useState(false);
+  const [matchError, setMatchError] = useState("");
+  const [result, setResult] = useState(null);
 
-  // Normalize candidate skills from Redux shared profile
-  const candidateSkills = useMemo(() => {
-    return (profile.skills || []).map((s) => {
-      if (typeof s === "object" && s !== null) {
-        return {
-          skill_name: s.skill_name,
-          category_code: s.category_code || "OTHER",
-          evidence: s.evidence || "",
-          confidence: s.confidence || "high",
-        };
-      }
-      return {
-        skill_name: String(s),
-        category_code: "OTHER",
-        evidence: "Profile skill",
-        confidence: "medium",
-      };
-    });
-  }, [profile.skills]);
-
-  const targetRoles = useMemo(() => {
-    const list = [...jobs];
-    // Also add any analyzed JDs from the profile if available
-    if (profile.jobAnalyses && Array.isArray(profile.jobAnalyses)) {
-      profile.jobAnalyses.forEach((analysis, idx) => {
-        if (analysis?.role && analysis?.skills) {
-          list.unshift({
-            company: analysis.company || "Uploaded JD",
-            role: analysis.role,
-            initials: "U",
-            color: "pink",
-            tags: analysis.skills.map((s) => s.skill_name || s),
-            jdSkills: analysis.skills.map((s) => ({
-              skill_name: s.skill_name || String(s),
-              category_code: s.category_code || "OTHER",
-              confidence: s.confidence || "high",
-            })),
-          });
-        }
-      });
-    }
-    return list;
-  }, [profile.jobAnalyses]);
-
-  const filteredJobs = useMemo(
+  const selectedJob = useMemo(
+    () => jobDescriptions.find((job) => job.id === selectedJobId) || null,
+    [jobDescriptions, selectedJobId],
+  );
+  const candidateSkills = useMemo(
     () =>
-      matches.filter((job) =>
-        `${job.role} ${job.company} ${job.tags.join(" ")}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
+      (candidateProfile?.skills || []).map((skill) =>
+        typeof skill === "string"
+          ? {
+              skill_name: skill,
+              category_code: "OTHER",
+              evidence: "Listed in candidate profile",
+              confidence: "medium",
+            }
+          : skill,
       ),
-    [matches, query],
+    [candidateProfile],
   );
 
-  async function runMatching() {
-    setLoading(true);
-    setError("");
-    setSelectedJob(null);
+  useEffect(() => {
+    let active = true;
 
-    const relevantRoles = targetRoles.filter(
-      (job) =>
-        job.role.toLowerCase().includes(role.toLowerCase()) ||
-        role.toLowerCase().includes(job.role.toLowerCase()),
-    );
-
-    const rolesToMatch =
-      relevantRoles.length > 0 ? relevantRoles : targetRoles.slice(0, 3);
-
-    try {
-      // Call backend API /api/skill-match for each role in parallel
-      const matchPromises = rolesToMatch.map(async (job) => {
-        const jdSkills =
-          job.jdSkills ||
-          job.tags.map((t) => ({ skill_name: t, category_code: "OTHER" }));
-        const result = await runSkillMatch({
-          candidateSkills,
-          jdSkills,
-          candidateId: profile.name || "candidate-active",
-          company: job.company,
-          role: job.role,
-        });
-
-        return {
-          ...job,
-          score: result.match_score,
-          summary: result.summary,
-          matchedSkills: result.matched_skills || [],
-          partialMatches: result.partial_matches || [],
-          missingSkills: result.missing_skills || [],
-        };
-      });
-
-      const results = await Promise.all(matchPromises);
-      results.sort((a, b) => b.score - a.score);
-
-      setMatches(results);
-      setHasRun(true);
-
-      // Save top match in Redux state so Dashboard reflects it
-      if (results.length > 0) {
-        dispatch(
-          setMatchingResults({
-            role: results[0].role,
-            company: results[0].company,
-            score: results[0].score,
-            count: results.length,
-            summary: results[0].summary,
-            createdAt: new Date().toISOString(),
-          }),
+    async function loadJobDescriptions() {
+      setJobsLoading(true);
+      setJobsError("");
+      try {
+        const firstPage = await getJobDescriptions({ page: 1, pageSize: 100 });
+        const remainingPages = await Promise.all(
+          Array.from(
+            { length: Math.max(0, firstPage.total_pages - 1) },
+            (_, index) =>
+              getJobDescriptions({ page: index + 2, pageSize: 100 }),
+          ),
         );
+        if (active) {
+          setJobDescriptions([
+            ...(firstPage.job_descriptions || []),
+            ...remainingPages.flatMap((page) => page.job_descriptions || []),
+          ]);
+        }
+      } catch (requestError) {
+        if (active) setJobsError(requestError.message);
+      } finally {
+        if (active) setJobsLoading(false);
       }
-    } catch (err) {
-      setError(
-        err.message || "Failed to execute skill matching via backend API",
+    }
+
+    loadJobDescriptions();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCandidateProfile() {
+      if (!profile.backendProfileId) {
+        setCandidateProfile(null);
+        setProfileLoading(false);
+        setProfileError("");
+        return;
+      }
+
+      setProfileLoading(true);
+      setProfileError("");
+      try {
+        const savedProfile = await getProfile(profile.backendProfileId);
+        if (active) setCandidateProfile(savedProfile);
+      } catch (requestError) {
+        if (active) setProfileError(requestError.message);
+      } finally {
+        if (active) setProfileLoading(false);
+      }
+    }
+
+    loadCandidateProfile();
+    return () => {
+      active = false;
+    };
+  }, [profile.backendProfileId]);
+
+  function selectJob(jobId) {
+    setResult(null);
+    setMatchError("");
+    setSearchParams(jobId ? { jdId: jobId } : {});
+  }
+
+  async function runMatching() {
+    if (!selectedJob || !candidateProfile) return;
+    setMatching(true);
+    setMatchError("");
+    try {
+      const matchResult = await runSkillMatch({
+        candidateSkills,
+        jdSkills: selectedJob.skills || [],
+        candidateId: profile.backendProfileId,
+        jdSourceFile: selectedJob.source_file,
+        company: selectedJob.company,
+        role: selectedJob.role,
+      });
+      setResult(matchResult);
+      dispatch(
+        setMatchingResults({
+          role: selectedJob.role || selectedJob.source_file,
+          company: selectedJob.company,
+          score: matchResult.match_score,
+          count: matchResult.summary.jd_skill_count,
+          createdAt: new Date().toISOString(),
+        }),
       );
+    } catch (requestError) {
+      setMatchError(requestError.message);
     } finally {
-      setLoading(false);
+      setMatching(false);
     }
   }
+
+  const jdSkills = selectedJob?.skills || EMPTY_SKILLS;
+  const hasSkills = jdSkills.length > 0;
+  const hasProfileSkills = candidateSkills.length > 0;
 
   return (
     <div className="page">
       <PageHeading
-        eyebrow="AI-POWERED MATCHING VIA BACKEND API"
+        eyebrow="YOUR SKILLS, THE RIGHT ROLE"
         title="Skill Matching"
-        description="Compare your structured profile skills against official target roles using deterministic semantic matching."
-        action={
-          <span className="secure-note">
-            <CheckCircle2 size={16} /> Backend API Connected
-          </span>
-        }
+        description="Compare your profile skills against requirements extracted from a saved job description."
+        action={<span className="secure-note">Saved JD data</span>}
       />
+      {candidateProfile && (
+        <section className="panel candidate-match-preview">
+          <div className="candidate-match-heading">
+            <div className="candidate-match-avatar">
+              {(candidateProfile.name || "C").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <span className="eyebrow">CANDIDATE PROFILE</span>
+              <h2>{candidateProfile.name || "Candidate"}</h2>
+              <p>{candidateProfile.email || "No email provided"}</p>
+            </div>
+            <span className="status-badge">
+              {candidateSkills.length} profile skills
+            </span>
+          </div>
+          <div className="candidate-match-meta">
+            {(candidateProfile.preferred_roles || []).length > 0 && (
+              <span>
+                Preferred role: {candidateProfile.preferred_roles.join(", ")}
+              </span>
+            )}
+            {(candidateProfile.education || []).map((education, index) => (
+              <span key={`${education.university}-${index}`}>
+                {[education.degree, education.university, education.year]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            ))}
+          </div>
+          {hasProfileSkills ? (
+            <div className="candidate-match-skills">
+              {candidateSkills.map((skill, index) => (
+                <span key={`${skill.skill_name}-${index}`}>
+                  {skill.skill_name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="preview-guidance">
+              This saved candidate profile has no skills to match yet.
+            </p>
+          )}
+        </section>
+      )}
       <section className="panel matching-controls">
         <div className="matching-control-copy">
           <div className="soft-icon pink">
             <Target size={19} />
           </div>
           <div>
-            <b>What target role would you like to match?</b>
+            <b>Select a job description</b>
             <span>
-              Calls{" "}
-              <code
-                style={{
-                  color: "#6841cf",
-                  background: "#f0ebff",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                }}
-              >
-                POST /api/skill-match
-              </code>{" "}
-              with your active profile ({candidateSkills.length} skills listed).
+              Match your profile against the skills extracted in JD Analytics.
             </span>
           </div>
         </div>
         <div className="matching-control-actions">
           <label className="talent-select-label">
-            <span>Target role</span>
+            <span>Saved job description</span>
             <select
-              value={role}
-              onChange={(event) => {
-                setRole(event.target.value);
-                setHasRun(false);
-                setSelectedJob(null);
-              }}
+              value={selectedJobId}
+              onChange={(event) => selectJob(event.target.value)}
+              disabled={jobsLoading || jobDescriptions.length === 0}
             >
-              <option>Software Engineer</option>
-              <option>Data Scientist</option>
-              <option>Data Analyst</option>
-              <option>Associate Software Engineer</option>
-              <option>Application Support Analyst</option>
+              <option value="">
+                {jobsLoading ? "Loading saved jobs..." : "Choose a saved JD"}
+              </option>
+              {jobDescriptions.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.role || job.source_file}
+                  {job.company ? ` · ${job.company}` : ""}
+                </option>
+              ))}
             </select>
           </label>
           <button
             className="button button-primary"
+            type="button"
             onClick={runMatching}
-            disabled={loading || candidateSkills.length === 0}
+            disabled={
+              !selectedJob ||
+              !hasSkills ||
+              !candidateProfile ||
+              !hasProfileSkills ||
+              matching ||
+              profileLoading
+            }
           >
             <Sparkles size={16} />
-            {loading ? "Matching via API..." : "Match my skills"}
+            {profileLoading
+              ? "Loading profile..."
+              : matching
+                ? "Matching skills..."
+                : "Match my skills"}
           </button>
         </div>
       </section>
-
-      {error && (
-        <section className="talent-alert" aria-live="polite">
-          <div role="alert">
-            <p>
-              <b>Matching error:</b> {error}
-            </p>
-          </div>
-        </section>
+      {jobsError && (
+        <p className="form-error" role="alert">
+          Could not load saved job descriptions: {jobsError}
+        </p>
       )}
-
-      {candidateSkills.length === 0 && (
-        <div className="tip-banner" style={{ marginBottom: "16px" }}>
-          <div className="tip-icon">
-            <AlertCircle size={18} />
-          </div>
-          <div>
-            <b>Your profile has no skills listed yet</b>
-            <span>
-              Upload your resume or add skills in Profile Builder to see
-              accurate match results.
-            </span>
-          </div>
-          <Link to="/resume">
-            Parse Resume <ArrowRight size={15} />
+      {profileError && (
+        <p className="form-error" role="alert">
+          Could not load your saved profile: {profileError}
+        </p>
+      )}
+      {!profileLoading && !profile.backendProfileId && (
+        <div className="panel no-results">
+          <Target size={22} />
+          <h3>Save your profile to continue</h3>
+          <p>
+            Skill Matching uses the profile saved from Profile Builder. Save
+            your profile there before running a match.
+          </p>
+          <Link className="button button-outline" to="/profile">
+            Go to Profile Builder <ArrowRight size={15} />
           </Link>
         </div>
       )}
-
-      {hasRun && matches.length > 0 && (
-        <div className="match-summary">
-          <div>
-            <div className="eyebrow">API MATCH RESULTS</div>
-            <h2>Roles matching “{role}”</h2>
-            <p>
-              {filteredJobs.length} of {matches.length} roles evaluated ·
-              Deterministic score calculated by backend service
-            </p>
-          </div>
-          <label className="result-search">
-            <Search size={16} />
-            <input
-              aria-label="Search role results"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search roles or technologies..."
-            />
-          </label>
-        </div>
-      )}
-
-      {!hasRun && !loading && (
+      {!profileLoading && candidateProfile && !hasProfileSkills && (
         <div className="panel no-results">
-          <Sparkles size={22} />
-          <h3>Ready to evaluate your profile</h3>
-          <p>
-            Select a target role and click &quot;Match my skills&quot; to invoke
-            the backend Skill Match service.
-          </p>
+          <Target size={22} />
+          <h3>No skills in your saved profile</h3>
+          <p>Add profile skills before comparing against a job description.</p>
+          <Link className="button button-outline" to="/profile">
+            Add profile skills <ArrowRight size={15} />
+          </Link>
         </div>
       )}
-
-      <div className="job-match-grid">
-        {filteredJobs.map((job) => (
-          <article
-            className="panel job-card"
-            key={`${job.company}-${job.role}`}
-          >
-            <div className="job-card-heading">
-              <div className={`company-mark company-${job.color}`}>
-                {job.initials}
-              </div>
-              <span className="status-badge">API Evaluated</span>
-            </div>
-            <h3>{job.role}</h3>
-            <p className="job-company">
-              {job.company} <span>·</span> Official Benchmark
-            </p>
-            <div className="job-score-line">
-              <div>
-                <b>{job.score}%</b>
-                <span>backend match score</span>
-              </div>
-              <div
-                className="job-progress"
-                role="progressbar"
-                aria-label={`${job.role} match score`}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={job.score}
-              >
-                <i style={{ width: `${job.score}%` }} />
-              </div>
-            </div>
-            <div className="job-match-stats">
-              <span>
-                <CheckCircle2 size={14} color="#169c64" />{" "}
-                {job.summary?.matched || 0} matched ·{" "}
-                {job.summary?.partial || 0} partial ·{" "}
-                {job.summary?.missing || 0} missing
-              </span>
-            </div>
-            <div className="job-tags">
-              {job.tags.slice(0, 6).map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
-            <button
-              className="button button-outline full-button"
-              aria-expanded={
-                selectedJob?.company === job.company &&
-                selectedJob?.role === job.role
-              }
-              onClick={() =>
-                setSelectedJob(
-                  selectedJob?.company === job.company &&
-                    selectedJob?.role === job.role
-                    ? null
-                    : job,
-                )
-              }
-            >
-              {selectedJob?.company === job.company &&
-              selectedJob?.role === job.role
-                ? "Hide breakdown"
-                : "View full breakdown"}{" "}
-              <ArrowRight size={15} />
-            </button>
-          </article>
-        ))}
-      </div>
-
+      {!jobsLoading && !jobsError && jobDescriptions.length === 0 && (
+        <div className="panel no-results">
+          <Search size={22} />
+          <h3>No saved job descriptions yet</h3>
+          <p>Analyze a job description first to use its requirements here.</p>
+          <Link className="button button-outline" to="/analytics">
+            Go to JD Analytics <ArrowRight size={15} />
+          </Link>
+        </div>
+      )}
       {selectedJob && (
-        <section className="panel selected-match-details" aria-live="polite">
-          <div className="panel-heading">
+        <section className="panel match-jd-preview">
+          <div className="match-jd-heading">
             <div>
-              <span className="eyebrow">BACKEND MATCH BREAKDOWN</span>
-              <h2>
-                {selectedJob.role} — {selectedJob.company}
-              </h2>
+              <span className="eyebrow">SELECTED JOB DESCRIPTION</span>
+              <h2>{selectedJob.role || selectedJob.source_file}</h2>
               <p>
-                Overall Match: <b>{selectedJob.score}%</b> · Evaluated by RADIX
-                Skill Matching engine
+                {selectedJob.company || "Company not identified"} ·{" "}
+                {selectedJob.source_file}
               </p>
             </div>
-            <span className="status-badge success">
-              {selectedJob.summary?.matched} of{" "}
-              {selectedJob.summary?.total_jd_skills} JD skills matched
+            <span className="status-badge">
+              {jdSkills.length} extracted skills
             </span>
           </div>
-
-          <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
-            {selectedJob.matchedSkills &&
-              selectedJob.matchedSkills.length > 0 && (
-                <div>
-                  <p
-                    style={{
-                      margin: "0 0 6px 0",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#169c64",
-                    }}
-                  >
-                    ✓ Matched Skills ({selectedJob.matchedSkills.length})
-                  </p>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
-                  >
-                    {selectedJob.matchedSkills.map((m, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: "#eaf8ef",
-                          border: "1px solid #ccecd7",
-                          color: "#16835d",
-                          padding: "4px 8px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        <b>{m.skill_name}</b>{" "}
-                        <small style={{ opacity: 0.8 }}>({m.match_type})</small>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {selectedJob.partialMatches &&
-              selectedJob.partialMatches.length > 0 && (
-                <div>
-                  <p
-                    style={{
-                      margin: "0 0 6px 0",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#bd7624",
-                    }}
-                  >
-                    ~ Partial Matches ({selectedJob.partialMatches.length})
-                  </p>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
-                  >
-                    {selectedJob.partialMatches.map((m, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: "#fff4dc",
-                          border: "1px solid #f6e2b5",
-                          color: "#8d5310",
-                          padding: "4px 8px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        <b>{m.skill_name}</b>{" "}
-                        <small>(Candidate: {m.candidate_skill})</small>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {selectedJob.missingSkills &&
-              selectedJob.missingSkills.length > 0 && (
-                <div>
-                  <p
-                    style={{
-                      margin: "0 0 6px 0",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#b54653",
-                    }}
-                  >
-                    ✗ Missing Skills ({selectedJob.missingSkills.length})
-                  </p>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
-                  >
-                    {selectedJob.missingSkills.map((m, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: "#ffedf0",
-                          border: "1px solid #f9ccd3",
-                          color: "#a42f3d",
-                          padding: "4px 8px",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        <b>{m.skill_name}</b>{" "}
-                        <small style={{ opacity: 0.8 }}>
-                          [{m.priority || m.recommendation_tag || "priority"}]
-                        </small>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-          </div>
+          {hasSkills ? (
+            <div className="job-tags">
+              {jdSkills.map((skill) => (
+                <span key={`${skill.category_code}-${skill.skill_name}`}>
+                  {skill.skill_name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="preview-guidance">
+              No required skills were extracted for this job description.
+            </p>
+          )}
         </section>
       )}
-
+      {matchError && (
+        <p className="form-error" role="alert">
+          Skill matching failed: {matchError}
+        </p>
+      )}
+      {!result && selectedJob && (
+        <div className="panel no-results">
+          <Sparkles size={22} />
+          <h3>Ready when you are</h3>
+          <p>Select a saved job description and run a skill match.</p>
+        </div>
+      )}
+      {result && (
+        <section className="panel match-result" aria-live="polite">
+          <div className="match-result-heading">
+            <div>
+              <span className="eyebrow">SKILL MATCH RESULTS</span>
+              <h2>{selectedJob?.role || selectedJob?.source_file}</h2>
+              <p>
+                {selectedJob?.company || "Company not identified"} ·{" "}
+                {result.summary.candidate_skill_count} profile skills compared
+                with {result.summary.jd_skill_count} JD requirements
+              </p>
+            </div>
+            <div className="match-result-score">
+              <b>{result.match_score}%</b>
+              <span>skill match</span>
+            </div>
+          </div>
+          <div className="match-result-summary">
+            <span>{result.summary.matched} matched</span>
+            <span>{result.summary.partial} partial</span>
+            <span>{result.summary.missing} not found</span>
+          </div>
+          <PieChart
+            title="Skill match breakdown"
+            centerLabel="JD skills"
+            data={[
+              {
+                label: "Matched",
+                value: result.summary.matched,
+                color: "#25a875",
+              },
+              {
+                label: "Partial",
+                value: result.summary.partial,
+                color: "#e5a436",
+              },
+              {
+                label: "Not found",
+                value: result.summary.missing,
+                color: "#df6570",
+              },
+            ]}
+          />
+          <div className="match-outcome-grid">
+            <MatchSkills
+              title="Matched skills"
+              skills={result.matched_skills}
+              type="matched"
+            />
+            <MatchSkills
+              title="Partial matches"
+              skills={result.partial_matches}
+              type="partial"
+            />
+            <MatchSkills
+              title="Not found in profile"
+              skills={result.missing_skills}
+              type="missing"
+            />
+          </div>
+          <p className="match-result-note">
+            <Lightbulb size={15} />
+            Missing means the skill was not found in your profile; it does not
+            prove you lack that skill.
+          </p>
+        </section>
+      )}
       <div className="tip-banner">
         <div className="tip-icon">
           <Lightbulb size={18} />
         </div>
         <div>
-          <b>Matching connects with Talent Check</b>
+          <b>Improve the comparison with your profile</b>
           <span>
-            Check your company readiness score against {role} requirements.
+            Add skills you can support with experience or evidence before
+            matching against a job description.
           </span>
         </div>
-        <Link to="/talent-check">
-          Go to Talent Check <ArrowRight size={15} />
+        <Link to="/profile">
+          Edit skills in My profile <ArrowRight size={15} />
         </Link>
       </div>
     </div>

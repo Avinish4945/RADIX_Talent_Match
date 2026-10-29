@@ -14,6 +14,7 @@ def save_profile(profile: CandidateProfile, profile_id: Optional[str] = None) ->
         raise LookupError("Profile ID was not found; reload the profile before saving")
     response = table.insert({"profile_data": dump}).execute()
     if response.data:
+<<<<<<< HEAD
         return str(response.data[0]["id"])
     raise RuntimeError("Failed to save profile to database")
 
@@ -66,3 +67,40 @@ def list_profiles(limit: int = 10) -> List[Dict[str, Any]]:
         return results
     except Exception:
         return []
+=======
+        return response.data[0]["profile_data"]
+    return None
+
+
+def list_profiles(limit: int = 100) -> list[dict]:
+    response = (
+        supabase.table("profiles")
+        .select("id, profile_data")
+        .limit(limit)
+        .execute()
+    )
+    profiles = []
+    for row in response.data or []:
+        profile_data = row.get("profile_data")
+        profile_id = row.get("id")
+        if not isinstance(profile_id, str) or not isinstance(profile_data, dict):
+            raise RuntimeError("Supabase returned an invalid profile record")
+        profiles.append(
+            {
+                "id": profile_id,
+                "name": profile_data.get("name") or "Unnamed candidate",
+            }
+        )
+    return profiles
+
+
+def update_profile(profile_id: str, profile: CandidateProfile) -> bool:
+    response = (
+        supabase.table("profiles")
+        .update({"profile_data": profile.model_dump()})
+        .eq("id", profile_id)
+        .select("id")
+        .execute()
+    )
+    return bool(response.data)
+>>>>>>> 8cf6984 (api link)

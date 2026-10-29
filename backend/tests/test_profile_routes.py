@@ -67,8 +67,18 @@ def test_get_profile_returns_404_when_profile_is_missing(monkeypatch):
     assert response.json() == {"detail": "Profile not found"}
 
 
+<<<<<<< HEAD
 def test_create_profile_with_existing_id_updates(monkeypatch):
     observed = {}
+=======
+<<<<<<< HEAD
+def test_get_latest_profile_returns_saved_profile(monkeypatch):
+    monkeypatch.setattr(
+        profile_routes.profile_service,
+        "get_latest_profile",
+        lambda: {"id": "latest-123", "name": "Latest User", "skills": ["Python"]},
+    )
+>>>>>>> aeafd8b (api link)
 
     def fake_save(profile, profile_id=None):
         observed["profile_id"] = profile_id
@@ -98,4 +108,70 @@ def test_create_profile_with_stale_id_returns_404(monkeypatch):
     )
 
     assert response.status_code == 404
+<<<<<<< HEAD
     assert "Profile ID was not found" in response.json()["detail"]
+=======
+    assert response.json() == {"detail": "No profile found"}
+=======
+def test_update_profile_returns_success(monkeypatch):
+    observed = {}
+
+    def update(profile_id, profile):
+        observed["profile_id"] = profile_id
+        observed["skills"] = profile.skills
+        return True
+
+    monkeypatch.setattr(profile_routes.profile_service, "update_profile", update)
+    response = CLIENT.put(
+        "/api/profiles/profile-123",
+        json={
+            "name": "Test Candidate",
+            "email": "candidate@example.test",
+            "skills": ["Python"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": "profile-123",
+        "message": "Profile updated successfully",
+    }
+    assert observed == {"profile_id": "profile-123", "skills": ["Python"]}
+
+
+def test_update_profile_returns_404_when_profile_is_missing(monkeypatch):
+    monkeypatch.setattr(
+        profile_routes.profile_service,
+        "update_profile",
+        lambda _profile_id, _profile: False,
+    )
+
+    response = CLIENT.put(
+        "/api/profiles/missing",
+        json={"name": "Test Candidate", "email": "candidate@example.test"},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Profile not found"}
+
+
+def test_update_profile_does_not_expose_internal_errors(monkeypatch):
+    def fail_to_update(_profile_id, _profile):
+        raise RuntimeError("database credentials leaked")
+
+    monkeypatch.setattr(
+        profile_routes.profile_service,
+        "update_profile",
+        fail_to_update,
+    )
+    client = TestClient(TEST_APP, raise_server_exceptions=False)
+
+    response = client.put(
+        "/api/profiles/profile-123",
+        json={"name": "Test Candidate", "email": "candidate@example.test"},
+    )
+
+    assert response.status_code == 500
+    assert "database credentials leaked" not in response.text
+>>>>>>> 8cf6984 (api link)
+>>>>>>> aeafd8b (api link)

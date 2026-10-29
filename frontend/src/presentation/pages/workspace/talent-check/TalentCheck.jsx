@@ -9,16 +9,29 @@ import {
   Target,
 } from "lucide-react";
 import { apiRequest } from "../../../../infrastructure/api/apiClient";
-import { markReadinessChecked } from "../../../../application/store/appSlice";
+import {
+  markReadinessChecked,
+  updateProfile as updateAppProfile,
+} from "../../../../application/store/appSlice";
+import {
+  createProfile,
+  getProfile,
+  toProfilePayload,
+  updateProfile as updateProfileApi,
+} from "../../../../infrastructure/api/profile";
+import { getJobDescriptions } from "../job-analytics/jdApi";
 import {
   PageHeading,
   ProgressRing,
 } from "../../../components/shared/PagePrimitives";
+import { PieChart } from "../../../components/shared/PieChart";
 
 const EMPTY_JOB_ANALYSES = [];
+const CURRENT_PROFILE_ID = "current-profile";
 
 export function TalentCheck() {
   const dispatch = useDispatch();
+  const appProfile = useSelector((state) => state.app.profile);
   const jobAnalyses = useSelector(
     (state) => state.app.profile.jobAnalyses || EMPTY_JOB_ANALYSES,
   );
@@ -32,22 +45,29 @@ export function TalentCheck() {
     [jobAnalyses],
   );
   const [configuredCompanies, setConfiguredCompanies] = useState([]);
+  const [jdCompanies, setJdCompanies] = useState([]);
+  const [jdCompanyRoles, setJdCompanyRoles] = useState({});
+  const [jdCompaniesError, setJdCompaniesError] = useState("");
   const companies = useMemo(
     () => [
       ...new Map(
-        [...configuredCompanies, ...extractedCompanies].map((name) => [
-          name.toLocaleLowerCase(),
-          name,
-        ]),
+        [...configuredCompanies, ...jdCompanies, ...extractedCompanies]
+          .map((name) => name.trim())
+          .filter(Boolean)
+          .map((name) => [name.toLocaleLowerCase(), name]),
       ).values(),
     ],
-    [configuredCompanies, extractedCompanies],
+    [configuredCompanies, extractedCompanies, jdCompanies],
   );
   const [candidates, setCandidates] = useState([]);
   const [company, setCompany] = useState("");
+  const [jdId, setJdId] = useState("");
   const [candidateId, setCandidateId] = useState("");
   const [companyError, setCompanyError] = useState("");
   const [candidateError, setCandidateError] = useState("");
+  const [candidateProfile, setCandidateProfile] = useState(null);
+  const [candidateProfileError, setCandidateProfileError] = useState("");
+  const [candidateProfileLoading, setCandidateProfileLoading] = useState(false);
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [optionsAttempt, setOptionsAttempt] = useState(0);
   const [checking, setChecking] = useState(false);
@@ -55,6 +75,16 @@ export function TalentCheck() {
   const [result, setResult] = useState(null);
   const selectedCompanyConfigured = configuredCompanies.some(
     (name) => name.toLocaleLowerCase() === company.toLocaleLowerCase(),
+  );
+  const selectedCompanyJds =
+    jdCompanyRoles[company.toLocaleLowerCase()]?.jobDescriptions || [];
+  const selectedJdHasSkills = selectedCompanyJds.some(
+    (job) => job.id === jdId && job.hasSkills,
+  );
+  const hasCurrentProfile = Boolean(
+    appProfile.name?.trim() ||
+    appProfile.email?.trim() ||
+    appProfile.skills?.length,
   );
 
   useEffect(() => {
@@ -64,10 +94,13 @@ export function TalentCheck() {
       setOptionsLoading(true);
       setCompanyError("");
       setCandidateError("");
-      const [companyResponse, candidateResponse] = await Promise.allSettled([
-        apiRequest("/talent-check/companies"),
-        apiRequest("/talent-check/candidates"),
-      ]);
+      setJdCompaniesError("");
+      const [companyResponse, candidateResponse, jdResponse] =
+        await Promise.allSettled([
+          apiRequest("/talent-check/companies"),
+          apiRequest("/talent-check/candidates"),
+          getJobDescriptions({ page: 1, pageSize: 100 }),
+        ]);
 
       if (!active) return;
 
@@ -84,12 +117,75 @@ export function TalentCheck() {
         setCompanyError(companyResponse.reason.message);
       }
 
+      if (jdResponse.status === "fulfilled") {
+        try {
+          const firstPage = jdResponse.value;
+          const remainingPages = await Promise.all(
+            Array.from(
+              { length: Math.max(0, firstPage.total_pages - 1) },
+              (_, index) =>
+                getJobDescriptions({ page: index + 2, pageSize: 100 }),
+            ),
+          );
+          if (!active) return;
+          const jobDescriptions = [
+            ...(firstPage.job_descriptions || []),
+            ...remainingPages.flatMap((page) => page.job_descriptions || []),
+          ];
+          const rolesByCompany = {};
+          for (const job of jobDescriptions) {
+            const name =
+              typeof job.company === "string" ? job.company.trim() : "";
+            if (!name) continue;
+            const key = name.toLocaleLowerCase();
+            rolesByCompany[key] ||= { name, roles: [], jobDescriptions: [] };
+            rolesByCompany[key].jobDescriptions.push({
+              id: job.id,
+              role: job.role,
+              sourceFile: job.source_file,
+              hasSkills: Array.isArray(job.skills) && job.skills.length > 0,
+            });
+            if (job.role && !rolesByCompany[key].roles.includes(job.role)) {
+              rolesByCompany[key].roles.push(job.role);
+            }
+          }
+          const importedCompanies = Object.values(rolesByCompany);
+          setJdCompanies(importedCompanies.map(({ name }) => name));
+          setJdCompanyRoles(rolesByCompany);
+          const defaultCompany =
+            extractedCompanies[0] || importedCompanies[0]?.name || "";
+          setCompany((current) => current || defaultCompany);
+          setJdId((current) => {
+            const selectedCompany = company || defaultCompany;
+            const companyJobs =
+              rolesByCompany[selectedCompany.toLocaleLowerCase()]
+                ?.jobDescriptions || [];
+            return current || companyJobs[0]?.id || "";
+          });
+        } catch (error) {
+          if (active) setJdCompaniesError(error.message);
+        }
+      } else {
+        setJdCompaniesError(jdResponse.reason.message);
+      }
+
       if (candidateResponse.status === "fulfilled") {
         const availableCandidates = candidateResponse.value.candidates || [];
         setCandidates(availableCandidates);
-        setCandidateId("active-profile");
+        const savedProfileId = appProfile.backendProfileId;
+        const selectedProfile = availableCandidates.find(
+          (candidate) => candidate.id === savedProfileId,
+        );
+        setCandidateId(
+          (current) =>
+            current ||
+            selectedProfile?.id ||
+            (hasCurrentProfile
+              ? CURRENT_PROFILE_ID
+              : availableCandidates[0]?.id || ""),
+        );
         setCandidateError(
-          availableCandidates.length
+          availableCandidates.length || hasCurrentProfile
             ? ""
             : "No candidates are available for assessment.",
         );
@@ -104,9 +200,49 @@ export function TalentCheck() {
     return () => {
       active = false;
     };
-  }, [extractedCompanies, optionsAttempt]);
+  }, [
+    appProfile.backendProfileId,
+    extractedCompanies,
+    hasCurrentProfile,
+    optionsAttempt,
+  ]);
 
-  const activeProfile = useSelector((state) => state.app.profile);
+  useEffect(() => {
+    let active = true;
+
+    async function loadCandidateProfile() {
+      if (!candidateId) {
+        setCandidateProfile(null);
+        setCandidateProfileError("");
+        return;
+      }
+
+      if (candidateId === CURRENT_PROFILE_ID) {
+        setCandidateProfile(toProfilePayload(appProfile));
+        setCandidateProfileError("");
+        return;
+      }
+
+      setCandidateProfileLoading(true);
+      setCandidateProfileError("");
+      try {
+        const savedProfile = await getProfile(candidateId);
+        if (active) setCandidateProfile(savedProfile);
+      } catch (error) {
+        if (active) {
+          setCandidateProfile(null);
+          setCandidateProfileError(error.message);
+        }
+      } finally {
+        if (active) setCandidateProfileLoading(false);
+      }
+    }
+
+    loadCandidateProfile();
+    return () => {
+      active = false;
+    };
+  }, [appProfile, candidateId]);
 
   async function runTalentCheck() {
     setChecking(true);
@@ -114,14 +250,29 @@ export function TalentCheck() {
     setResult(null);
 
     try {
-      const body =
-        candidateId === "active-profile"
-          ? { profile: activeProfile, company }
-          : { candidate_id: candidateId, company };
-
+      let assessmentCandidateId = candidateId;
+      if (candidateId === CURRENT_PROFILE_ID) {
+        const savedProfile = await createProfile(toProfilePayload(appProfile));
+        assessmentCandidateId = savedProfile.id;
+        dispatch(updateAppProfile({ backendProfileId: savedProfile.id }));
+        setCandidateId(savedProfile.id);
+        setCandidates((current) => [
+          {
+            id: savedProfile.id,
+            name: appProfile.name || "Unnamed candidate",
+          },
+          ...current.filter((candidate) => candidate.id !== savedProfile.id),
+        ]);
+      } else if (candidateId === appProfile.backendProfileId) {
+        await updateProfileApi(candidateId, toProfilePayload(appProfile));
+      }
       const response = await apiRequest("/talent-check/", {
         method: "POST",
-        body,
+        body: {
+          candidate_id: assessmentCandidateId,
+          company,
+          ...(!selectedCompanyConfigured ? { jd_id: jdId } : {}),
+        },
       });
       setResult(response);
       dispatch(markReadinessChecked(response));
@@ -141,16 +292,49 @@ export function TalentCheck() {
     ) || [];
   const unknownSkills =
     result?.skillset_gap.filter((skill) => skill.status === "unknown") || [];
+  const isPresenceAssessment = result?.assessment_type === "skills_presence";
+  const presentSkills =
+    result?.skillset_gap.filter((skill) => skill.status === "present") || [];
+  const partialSkills =
+    result?.skillset_gap.filter((skill) => skill.status === "partial") || [];
+  const missingSkills =
+    result?.skillset_gap.filter((skill) => skill.status === "missing") || [];
+  const pieData = isPresenceAssessment
+    ? [
+        { label: "Present", value: presentSkills.length, color: "#25a875" },
+        { label: "Partial", value: partialSkills.length, color: "#e5a436" },
+        { label: "Missing", value: missingSkills.length, color: "#df6570" },
+      ]
+    : [
+        {
+          label: "Meets requirement",
+          value:
+            result?.skillset_gap.filter(
+              (skill) => skill.status === "assessed" && !skill.gap,
+            ).length || 0,
+          color: "#25a875",
+        },
+        {
+          label: "Skill gap",
+          value: assessedGaps.length,
+          color: "#df6570",
+        },
+        {
+          label: "Not assessed",
+          value: unknownSkills.length,
+          color: "#9aa6b2",
+        },
+      ];
 
   return (
     <div className="page talent-check-page">
       <PageHeading
         eyebrow="KNOW WHERE YOU STAND"
         title="Talent Check"
-        description="Compare assessed skills with configured company requirements. Candidate profiles in this demo are sample data."
+        description="Compare a saved candidate profile with configured company requirements or skills from a saved job description."
         action={
           <span className="secure-note">
-            <ShieldCheck size={16} /> Demo candidate data
+            <ShieldCheck size={16} /> Saved profile data
           </span>
         }
       />
@@ -162,8 +346,8 @@ export function TalentCheck() {
           <div>
             <b>Choose a company and candidate</b>
             <span>
-              Results use the configured company requirements and candidate
-              profile.
+              Choose a configured assessment or a saved JD for a presence-only
+              skill check.
             </span>
           </div>
         </div>
@@ -173,7 +357,12 @@ export function TalentCheck() {
             <select
               value={company}
               onChange={(event) => {
-                setCompany(event.target.value);
+                const nextCompany = event.target.value;
+                setCompany(nextCompany);
+                setJdId(
+                  jdCompanyRoles[nextCompany.toLocaleLowerCase()]
+                    ?.jobDescriptions[0]?.id || "",
+                );
                 setResult(null);
                 setApiError("");
               }}
@@ -189,22 +378,52 @@ export function TalentCheck() {
               )}
               {companies.map((name) => (
                 <option key={name} value={name}>
-                  {name === "Example Company"
-                    ? "Example Company [Synthetic Fixture]"
-                    : `${name} (Official Benchmark)`}
+                  {name}
+                  {jdCompanyRoles[name.toLocaleLowerCase()]?.roles.length
+                    ? ` · JD: ${jdCompanyRoles[name.toLocaleLowerCase()].roles.join(", ")}`
+                    : ""}
                 </option>
               ))}
             </select>
             <small>
               {!company
                 ? "Choose a company to see whether assessment requirements are available."
-                : company === "Example Company"
-                  ? "⚠️ Synthetic Fixture: Preserved for dev/regression testing. Use Google LLC, Microsoft, or Oracle for official evaluations."
-                  : selectedCompanyConfigured
-                    ? "✓ Official Benchmark: Requirements verified against organizer partner specifications."
+                : selectedCompanyConfigured
+                  ? "Company requirements are available for this selection."
+                  : jdCompanyRoles[company.toLocaleLowerCase()]?.roles.length
+                    ? `Imported from JD Analytics for ${jdCompanyRoles[
+                        company.toLocaleLowerCase()
+                      ].roles.join(
+                        ", ",
+                      )}, but no company assessment requirements are configured.`
                     : "This company came from Job Analytics, but has no configured assessment requirements."}
             </small>
           </label>
+          {!selectedCompanyConfigured && selectedCompanyJds.length > 0 && (
+            <label className="talent-select-label">
+              <span>Job description</span>
+              <select
+                value={jdId}
+                onChange={(event) => {
+                  setJdId(event.target.value);
+                  setResult(null);
+                  setApiError("");
+                }}
+                aria-label="Select job description"
+              >
+                {selectedCompanyJds.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.role || job.sourceFile}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {selectedJdHasSkills
+                  ? "JD-based assessment checks exact skill presence only; fuzzy and partial matches are reported separately."
+                  : "This job description has no extracted skills to assess."}
+              </small>
+            </label>
+          )}
           <label className="talent-select-label">
             <span>Candidate</span>
             <select
@@ -215,7 +434,10 @@ export function TalentCheck() {
                 setApiError("");
               }}
               aria-label="Select candidate"
-              disabled={optionsLoading || candidates.length === 0}
+              disabled={
+                optionsLoading ||
+                (!hasCurrentProfile && candidates.length === 0)
+              }
             >
               {candidates.length === 0 && (
                 <option value="">
@@ -224,10 +446,11 @@ export function TalentCheck() {
                     : "No candidates available"}
                 </option>
               )}
-              <option value="active-profile">
-                ★ My Active Profile (
-                {activeProfile?.name || "Workspace Profile"})
-              </option>
+              {!appProfile.backendProfileId && hasCurrentProfile && (
+                <option value={CURRENT_PROFILE_ID}>
+                  My Profile{appProfile.name ? ` · ${appProfile.name}` : ""}
+                </option>
+              )}
               {candidates.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
                   {candidate.name}
@@ -243,8 +466,11 @@ export function TalentCheck() {
               checking ||
               !company ||
               !candidateId ||
-              !selectedCompanyConfigured ||
-              Boolean(candidateError)
+              (!selectedCompanyConfigured &&
+                (!selectedCompanyJds.length || !selectedJdHasSkills)) ||
+              Boolean(candidateError) ||
+              Boolean(candidateProfileError) ||
+              candidateProfileLoading
             }
           >
             <Target size={16} />
@@ -257,7 +483,53 @@ export function TalentCheck() {
         </div>
       </section>
 
-      {(companyError || candidateError || apiError) && (
+      {candidateProfile && (
+        <section className="panel talent-candidate-preview">
+          <div className="talent-candidate-heading">
+            <div className="candidate-match-avatar">
+              {(candidateProfile.name || "C").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <span className="eyebrow">SELECTED CANDIDATE</span>
+              <h2>{candidateProfile.name || selectedCandidate?.name}</h2>
+              <p>{candidateProfile.email || "No email provided"}</p>
+            </div>
+            <span className="status-badge">
+              {(candidateProfile.skills || []).length} profile skills
+            </span>
+          </div>
+          <div className="candidate-match-skills">
+            {(candidateProfile.skills || []).map((skill, index) => {
+              const skillName =
+                typeof skill === "string" ? skill : skill.skill_name;
+              const skillLevel = typeof skill === "string" ? null : skill.level;
+              return (
+                <span key={`${skillName}-${index}`}>
+                  {skillName}
+                  {skillLevel == null
+                    ? " · level unknown"
+                    : ` · ${skillLevel}/10`}
+                </span>
+              );
+            })}
+          </div>
+          {!(candidateProfile.skills || []).length && (
+            <p className="preview-guidance">
+              This saved candidate profile has no skills to assess.
+            </p>
+          )}
+        </section>
+      )}
+      {candidateProfileLoading && (
+        <p className="preview-guidance" role="status">
+          Loading selected candidate profile...
+        </p>
+      )}
+      {(companyError ||
+        jdCompaniesError ||
+        candidateError ||
+        candidateProfileError ||
+        apiError) && (
         <section className="talent-alert" aria-live="polite">
           <div role="alert">
             {companyError && (
@@ -265,9 +537,19 @@ export function TalentCheck() {
                 <b>Company requirements unavailable:</b> {companyError}
               </p>
             )}
+            {jdCompaniesError && (
+              <p>
+                <b>JD companies unavailable:</b> {jdCompaniesError}
+              </p>
+            )}
             {candidateError && (
               <p>
                 <b>Candidate unavailable:</b> {candidateError}
+              </p>
+            )}
+            {candidateProfileError && (
+              <p>
+                <b>Candidate profile unavailable:</b> {candidateProfileError}
               </p>
             )}
             {apiError && (
@@ -304,7 +586,9 @@ export function TalentCheck() {
                   {result.company} · {selectedCandidate?.name || candidateId}
                 </h2>
                 <p>
-                  Assessment based on configured company skill requirements.
+                  {isPresenceAssessment
+                    ? "Presence-only assessment based on the selected saved job description."
+                    : "Assessment based on configured company skill requirements."}
                 </p>
               </div>
               <span className="status-badge success">Assessment complete</span>
@@ -316,7 +600,9 @@ export function TalentCheck() {
                   aria-label="Readiness score unavailable"
                 >
                   <b>—</b>
-                  <small>not assessed</small>
+                  <small>
+                    {isPresenceAssessment ? "no JD levels" : "not assessed"}
+                  </small>
                 </div>
               ) : (
                 <ProgressRing
@@ -328,34 +614,56 @@ export function TalentCheck() {
               )}
               <div className="score-details">
                 <h3>
-                  {result.readiness_score === null
-                    ? "No required skills have been assessed."
-                    : `${result.readiness_score}% readiness`}
+                  {isPresenceAssessment
+                    ? "JD skill presence"
+                    : result.readiness_score === null
+                      ? "No required skills have been assessed."
+                      : `${result.readiness_score}% readiness`}
                 </h3>
                 <p>
-                  Unknown skill levels are excluded from the readiness score.
-                  Coverage shows how much of the company's requirements were
-                  assessed.
+                  {isPresenceAssessment
+                    ? "Coverage counts exact and alias matches only. Fuzzy and partial matches are shown separately; no proficiency or readiness score is inferred."
+                    : "Unknown skill levels are excluded from the readiness score. Coverage shows how much of the company's requirements were assessed."}
                 </p>
                 <div className="score-metrics">
                   <div>
-                    <span>Coverage</span>
+                    <span>
+                      {isPresenceAssessment ? "Exact coverage" : "Coverage"}
+                    </span>
                     <b>{result.coverage_percent}%</b>
                   </div>
                   <div>
-                    <span>Assessed skills</span>
+                    <span>
+                      {isPresenceAssessment
+                        ? "Skills found"
+                        : "Assessed skills"}
+                    </span>
                     <b>
-                      {result.skillset_gap.length - unknownSkills.length}/
-                      {result.skillset_gap.length}
+                      {isPresenceAssessment
+                        ? `${presentSkills.length}/${result.skillset_gap.length}`
+                        : `${result.skillset_gap.length - unknownSkills.length}/${result.skillset_gap.length}`}
                     </b>
                   </div>
                 </div>
               </div>
             </div>
+            <PieChart
+              title={
+                isPresenceAssessment
+                  ? "JD skill presence breakdown"
+                  : "Requirement assessment breakdown"
+              }
+              centerLabel={isPresenceAssessment ? "JD skills" : "requirements"}
+              data={pieData}
+            />
             <div className="readiness-breakdown">
               <div className="breakdown-heading">
                 <b>Skill-wise breakdown</b>
-                <span>Candidate level compared with company requirement</span>
+                <span>
+                  {isPresenceAssessment
+                    ? "JD skills checked against the selected candidate profile"
+                    : "Candidate level compared with company requirement"}
+                </span>
               </div>
               <div
                 className="breakdown-table"
@@ -364,14 +672,37 @@ export function TalentCheck() {
                 tabIndex={0}
               >
                 <div className="breakdown-row table-head">
-                  <span>Category</span>
-                  <span>Candidate</span>
-                  <span>Required</span>
+                  <span>{isPresenceAssessment ? "JD skill" : "Category"}</span>
+                  <span>
+                    {isPresenceAssessment ? "Profile match" : "Candidate"}
+                  </span>
+                  <span>{isPresenceAssessment ? "Category" : "Required"}</span>
                   <span>Status</span>
                 </div>
                 {result.skillset_gap.map((skill) => {
                   const unknown = skill.status === "unknown";
                   const meets = !unknown && !skill.gap;
+                  if (isPresenceAssessment) {
+                    return (
+                      <div
+                        className="breakdown-row"
+                        key={`${skill.category_code}-${skill.skill_name}`}
+                      >
+                        <b>{skill.skill_name}</b>
+                        <span>{skill.candidate_skill || "—"}</span>
+                        <span>{skill.category_code}</span>
+                        <span
+                          className={`status-word ${skill.status === "present" ? "meets" : skill.status === "partial" ? "unknown" : "gap"}`}
+                        >
+                          {skill.status === "present"
+                            ? "Present"
+                            : skill.status === "partial"
+                              ? "Partial match"
+                              : "Missing"}
+                        </span>
+                      </div>
+                    );
+                  }
                   return (
                     <div className="breakdown-row" key={skill.category_code}>
                       <b>{skill.category_code}</b>
@@ -407,12 +738,30 @@ export function TalentCheck() {
               </span>
             </div>
             <p className="improve-intro">
-              {assessedGaps.length
-                ? "Focus on the assessed categories below to reduce your skill gaps."
-                : "No assessed skill gaps were found for this candidate."}
+              {isPresenceAssessment
+                ? "Review missing JD skills and partial matches below."
+                : assessedGaps.length
+                  ? "Focus on the assessed categories below to reduce your skill gaps."
+                  : "No assessed skill gaps were found for this candidate."}
             </p>
             <div className="improve-list">
-              {assessedGaps.length ? (
+              {isPresenceAssessment &&
+              (missingSkills.length || partialSkills.length) ? (
+                [...missingSkills, ...partialSkills].map((skill, index) => (
+                  <div key={`${skill.category_code}-${skill.skill_name}`}>
+                    <span className="improve-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span>
+                      {skill.skill_name} ·{" "}
+                      {skill.status === "missing"
+                        ? "not found"
+                        : "partial match"}
+                    </span>
+                    <ArrowRight size={14} />
+                  </div>
+                ))
+              ) : !isPresenceAssessment && assessedGaps.length ? (
                 assessedGaps.map((skill, index) => (
                   <div key={skill.category_code}>
                     <span className="improve-number">
@@ -427,9 +776,11 @@ export function TalentCheck() {
                 ))
               ) : (
                 <p className="assessment-note">
-                  {unknownSkills.length
-                    ? `${unknownSkills.length} required ${unknownSkills.length === 1 ? "skill has" : "skills have"} no assessed candidate level.`
-                    : "The candidate meets all assessed requirements."}
+                  {isPresenceAssessment
+                    ? "All JD skills have an exact or partial profile match."
+                    : unknownSkills.length
+                      ? `${unknownSkills.length} required ${unknownSkills.length === 1 ? "skill has" : "skills have"} no assessed candidate level.`
+                      : "The candidate meets all assessed requirements."}
                 </p>
               )}
             </div>
@@ -443,8 +794,8 @@ export function TalentCheck() {
           <Sparkles size={20} />
           <b>Run an assessment to see readiness results</b>
           <span>
-            Select an available company and candidate. Results will include
-            readiness, coverage, assessed skill gaps, and unknown levels.
+            Select a company and candidate. Configured requirements provide
+            readiness scoring; saved JDs provide a presence-only skill check.
           </span>
         </section>
       )}
@@ -455,8 +806,8 @@ export function TalentCheck() {
         <div>
           <b>Progress over perfection</b>
           <span>
-            Readiness is a guide, not a gate. Unknown means a skill level was
-            not available to assess.
+            Configured readiness is a guide, not a gate. JD-based checks only
+            show skill presence and never infer proficiency levels.
           </span>
         </div>
         <Link to="/profile">

@@ -13,6 +13,7 @@ from app.modules.talent_check.service import (
     CompanyNotFoundError,
     load_company_dataset,
     load_company_names,
+    run_jd_presence_check,
     run_talent_check,
 )
 from app.routes import talent_check_routes
@@ -23,9 +24,47 @@ REQUIREMENTS = [
     {"category_code": "DSA", "required_level": 6},
     {"category_code": "SQL", "required_level": 4},
 ]
+SAVED_CANDIDATE = {
+    "id": "candidate-123",
+    "name": "Saved Candidate",
+    "skills": [
+        {
+            "skill_name": "Python",
+            "category_code": "COD",
+            "level": 7,
+            "evidence": "Candidate project",
+        },
+        {
+            "skill_name": "DSA",
+            "category_code": "DSA",
+            "level": 5,
+            "evidence": "Candidate practice",
+        },
+        {
+            "skill_name": "SQL",
+            "category_code": "SQL",
+            "level": 6,
+            "evidence": "Candidate coursework",
+        },
+    ],
+}
 TEST_APP = FastAPI()
 TEST_APP.include_router(talent_check_routes.router, prefix="/api/talent-check")
 CLIENT = TestClient(TEST_APP)
+
+
+@pytest.fixture(autouse=True)
+def use_saved_candidate(monkeypatch):
+    def get_profile(profile_id):
+        if profile_id == SAVED_CANDIDATE["id"]:
+            return SAVED_CANDIDATE
+        return None
+
+    monkeypatch.setattr(
+        talent_check_routes.profile_service,
+        "get_profile_by_id",
+        get_profile,
+    )
 
 
 def write_dataset(path, companies):
@@ -36,14 +75,18 @@ def write_dataset(path, companies):
 def post_check(company="Co"):
     return CLIENT.post(
         "/api/talent-check/",
-        json={"candidate_id": "demo-candidate", "company": company},
+        json={"candidate_id": SAVED_CANDIDATE["id"], "company": company},
     )
 
 
 def test_company_and_candidate_selection_options(monkeypatch):
-    monkeypatch.setenv("RADIX_USE_MOCK_PROFILES", "true")
     monkeypatch.setattr(
         talent_check_routes, "load_company_names", lambda: ["Northstar Tech", "DataForge"]
+    )
+    monkeypatch.setattr(
+        talent_check_routes.profile_service,
+        "list_profiles",
+        lambda: [{"id": SAVED_CANDIDATE["id"], "name": SAVED_CANDIDATE["name"]}],
     )
 
     companies = CLIENT.get("/api/talent-check/companies")
@@ -52,12 +95,20 @@ def test_company_and_candidate_selection_options(monkeypatch):
     assert companies.status_code == 200
     assert companies.json() == {"companies": ["Northstar Tech", "DataForge"]}
     assert candidates.status_code == 200
+<<<<<<< HEAD
     candidate_ids = [c["id"] for c in candidates.json()["candidates"]]
     assert "demo-candidate" in candidate_ids
     assert "ananya-rao" in candidate_ids
     assert "karthik-subramaniam" in candidate_ids
     assert "priya-menon" in candidate_ids
     assert "rohan-verma" in candidate_ids
+=======
+    assert candidates.json() == {
+        "candidates": [
+            {"id": SAVED_CANDIDATE["id"], "name": SAVED_CANDIDATE["name"]}
+        ]
+    }
+>>>>>>> 8cf6984 (api link)
 
 
 def test_company_options_return_503_when_dataset_is_missing(monkeypatch):
@@ -208,7 +259,6 @@ def test_missing_company_returns_clear_404(tmp_path, monkeypatch):
 
 
 def test_unknown_candidate_returns_clear_404(monkeypatch):
-    monkeypatch.setenv("RADIX_USE_MOCK_PROFILES", "true")
     response = CLIENT.post(
         "/api/talent-check/",
         json={"candidate_id": "missing-candidate", "company": "Co"},
@@ -220,7 +270,6 @@ def test_unknown_candidate_returns_clear_404(monkeypatch):
 
 def test_api_response_matches_manual_score_and_gaps(tmp_path, monkeypatch):
     dataset = write_dataset(tmp_path / "companies.json", {"Co": REQUIREMENTS})
-    monkeypatch.setenv("RADIX_USE_MOCK_PROFILES", "true")
     monkeypatch.setattr(
         talent_check_routes,
         "run_talent_check",
@@ -232,11 +281,14 @@ def test_api_response_matches_manual_score_and_gaps(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert response.json() == {
         "company": "Co",
+        "assessment_type": "proficiency",
         "readiness_score": 89,
         "coverage_percent": 100,
         "skillset_gap": [
             {
                 "category_code": "COD",
+                "skill_name": None,
+                "candidate_skill": None,
                 "required_level": 8,
                 "candidate_level": 7,
                 "gap_size": 1,
@@ -245,6 +297,8 @@ def test_api_response_matches_manual_score_and_gaps(tmp_path, monkeypatch):
             },
             {
                 "category_code": "DSA",
+                "skill_name": None,
+                "candidate_skill": None,
                 "required_level": 6,
                 "candidate_level": 5,
                 "gap_size": 1,
@@ -253,6 +307,8 @@ def test_api_response_matches_manual_score_and_gaps(tmp_path, monkeypatch):
             },
             {
                 "category_code": "SQL",
+                "skill_name": None,
+                "candidate_skill": None,
                 "required_level": 4,
                 "candidate_level": 6,
                 "gap_size": 0,
@@ -261,6 +317,173 @@ def test_api_response_matches_manual_score_and_gaps(tmp_path, monkeypatch):
             },
         ],
     }
+
+
+def test_jd_presence_check_does_not_invent_proficiency_levels():
+    result = run_jd_presence_check(
+        {
+            "skills": [
+                "React",
+                {
+                    "skill_name": "JavaScript",
+                    "category_code": "COD",
+                    "confidence": "high",
+                },
+            ]
+        },
+        "JD Company",
+        [
+            {
+                "skill_name": "React",
+                "category_code": "COD",
+                "evidence": "Required",
+                "confidence": "high",
+            },
+            {
+                "skill_name": "JavaScript",
+                "category_code": "COD",
+                "evidence": "Required",
+                "confidence": "high",
+            },
+            {
+                "skill_name": "TypeScript",
+                "category_code": "COD",
+                "evidence": "Required",
+                "confidence": "medium",
+            },
+            {
+                "skill_name": "React Query",
+                "category_code": "COD",
+                "evidence": "Required",
+                "confidence": "medium",
+            },
+        ],
+    )
+
+    assert result["assessment_type"] == "skills_presence"
+    assert result["readiness_score"] is None
+    assert result["coverage_percent"] == 50
+    assert [(skill["skill_name"], skill["status"]) for skill in result["skillset_gap"]] == [
+        ("React", "present"),
+        ("JavaScript", "present"),
+        ("TypeScript", "missing"),
+        ("React Query", "partial"),
+    ]
+    assert all(skill["required_level"] is None for skill in result["skillset_gap"])
+
+
+def test_jd_presence_endpoint_uses_saved_jd_skills(monkeypatch):
+    jd_id = "00000000-0000-0000-0000-000000000001"
+    monkeypatch.setattr(
+        talent_check_routes,
+        "load_job_description",
+        lambda _jd_id: {
+            "company": "JD Company",
+            "skills": [
+                {
+                    "skill_name": "Python",
+                    "category_code": "COD",
+                    "evidence": "JD requirement",
+                    "confidence": "high",
+                }
+            ],
+        },
+    )
+
+    response = CLIENT.post(
+        "/api/talent-check/",
+        json={
+            "candidate_id": SAVED_CANDIDATE["id"],
+            "company": "JD Company",
+            "jd_id": jd_id,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["assessment_type"] == "skills_presence"
+    assert body["readiness_score"] is None
+    assert body["skillset_gap"][0]["skill_name"] == "Python"
+    assert body["skillset_gap"][0]["status"] == "present"
+
+
+def test_jd_presence_endpoint_rejects_jd_from_another_company(monkeypatch):
+    monkeypatch.setattr(
+        talent_check_routes,
+        "load_job_description",
+        lambda _jd_id: {"company": "Other Company", "skills": []},
+    )
+
+    response = CLIENT.post(
+        "/api/talent-check/",
+        json={
+            "candidate_id": SAVED_CANDIDATE["id"],
+            "company": "JD Company",
+            "jd_id": "00000000-0000-0000-0000-000000000001",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "does not belong to this company" in response.json()["detail"]
+
+
+def test_jd_presence_endpoint_rejects_missing_jd(monkeypatch):
+    monkeypatch.setattr(
+        talent_check_routes,
+        "load_job_description",
+        lambda _jd_id: None,
+    )
+
+    response = CLIENT.post(
+        "/api/talent-check/",
+        json={
+            "candidate_id": SAVED_CANDIDATE["id"],
+            "company": "JD Company",
+            "jd_id": "00000000-0000-0000-0000-000000000001",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Job description not found"
+
+
+def test_jd_presence_endpoint_rejects_job_without_skills(monkeypatch):
+    monkeypatch.setattr(
+        talent_check_routes,
+        "load_job_description",
+        lambda _jd_id: {"company": "JD Company", "skills": []},
+    )
+
+    response = CLIENT.post(
+        "/api/talent-check/",
+        json={
+            "candidate_id": SAVED_CANDIDATE["id"],
+            "company": "JD Company",
+            "jd_id": "00000000-0000-0000-0000-000000000001",
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "Selected job description has no extracted skills"
+    )
+
+
+def test_talent_check_uses_saved_profile_api_data(tmp_path, monkeypatch):
+    dataset = write_dataset(tmp_path / "companies.json", {"Co": REQUIREMENTS})
+    observed = {}
+
+    def run(profile, company):
+        observed["profile"] = profile
+        return run_talent_check(profile, company, dataset)
+
+    monkeypatch.setattr(talent_check_routes, "run_talent_check", run)
+
+    response = post_check()
+
+    assert response.status_code == 200
+    assert observed["profile"] == SAVED_CANDIDATE
 
 
 def test_missing_dataset_returns_clear_503(tmp_path, monkeypatch):

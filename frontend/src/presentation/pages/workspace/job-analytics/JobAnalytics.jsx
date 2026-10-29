@@ -431,8 +431,11 @@ export function JobAnalytics() {
               No skills were extracted from this job description.
             </p>
           )}
-          <Link className="button button-primary inline-button" to="/matching">
-            Browse sample roles <ArrowRight size={15} />
+          <Link
+            className="button button-primary inline-button"
+            to={`/matching?jdId=${encodeURIComponent(analysis.id)}`}
+          >
+            Match my skills to this JD <ArrowRight size={15} />
           </Link>
         </section>
       )}
@@ -448,7 +451,7 @@ export function JobAnalytics() {
           </span>
         </div>
         <Link to="/matching">
-          Browse sample roles <ArrowRight size={15} />
+          Match against a saved JD <ArrowRight size={15} />
         </Link>
       </section>
     </div>
