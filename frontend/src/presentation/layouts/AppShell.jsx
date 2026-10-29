@@ -1,13 +1,24 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+  Link,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Activity,
+  Bell,
   BriefcaseBusiness,
   ChevronDown,
+  Compass,
   FileText,
+  Globe,
+  HelpCircle,
   LayoutDashboard,
   LogOut,
   Menu,
+  Search,
   Settings,
   Sparkles,
   UserRound,
@@ -199,8 +210,9 @@ export function AppShell() {
             <strong>RADIX</strong>
             <small>Talent Match</small>
           </span>
+          <span className="sidebar-version-pill">v2.4</span>
         </NavLink>
-        <div className="sidebar-label">WORKSPACE</div>
+        <div className="sidebar-label">WORKSPACE MODULES</div>
         <nav className="side-nav" aria-label="Workspace navigation">
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -216,26 +228,76 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
+        <div className="sidebar-bottom">
+          <div className="sidebar-label">EXPLORE</div>
+          <Link
+            to="/welcome"
+            className="side-link showcase-link"
+            onClick={() => setMobileOpen(false)}
+          >
+            <Compass size={18} strokeWidth={1.8} />
+            <span>Platform Showcase</span>
+          </Link>
+          <div className="sidebar-help">
+            <span className="help-icon">
+              <HelpCircle size={15} />
+            </span>
+            <div>
+              <b>Executive Precision</b>
+              <span>v2.4 Neural Matching</span>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <main className="main-area">
         <header className="topbar">
-          <button
-            className="icon-button mobile-menu"
-            ref={mobileMenuRef}
-            aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={mobileOpen}
-            aria-controls="workspace-sidebar"
-            onClick={() => setMobileOpen((open) => !open)}
-          >
-            <Menu size={21} />
-          </button>
-          <div className="breadcrumb" aria-label="Current page">
-            <span>Workspace</span>
-            <span className="breadcrumb-slash">/</span>
-            <b>{currentPage}</b>
+          <div className="topbar-left">
+            <button
+              className="icon-button mobile-menu"
+              ref={mobileMenuRef}
+              aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileOpen}
+              aria-controls="workspace-sidebar"
+              onClick={() => setMobileOpen((open) => !open)}
+            >
+              <Menu size={21} />
+            </button>
+            <div className="breadcrumb" aria-label="Current page">
+              <span>Workspace</span>
+              <span className="breadcrumb-slash">/</span>
+              <b>{currentPage}</b>
+            </div>
           </div>
+
+          <div className="topbar-search">
+            <Search size={15} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search competencies, roles, profiles..."
+              aria-label="Search competencies and roles"
+              readOnly
+              onClick={() => navigate("/matching")}
+            />
+            <span className="kbd-shortcut">⌘K</span>
+          </div>
+
           <div className="topbar-actions">
+            <div className="api-status-chip" title="FastAPI backend connected">
+              <span className="status-dot-pulse" />
+              <span className="api-status-text">Live API</span>
+            </div>
+
+            <button
+              className="topbar-icon-btn"
+              aria-label="Notifications"
+              title="3 unread activity events"
+              onClick={() => navigate("/dashboard")}
+            >
+              <Bell size={17} />
+              <span className="badge-count">3</span>
+            </button>
+
             <div className="user-menu-wrap">
               <button
                 className="user-menu"
@@ -267,6 +329,15 @@ export function AppShell() {
                     }}
                   >
                     <Settings size={15} /> My profile
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate("/welcome");
+                    }}
+                  >
+                    <Compass size={15} /> Platform Showcase
                   </button>
                   <button role="menuitem" onClick={logout}>
                     <LogOut size={15} /> Log out

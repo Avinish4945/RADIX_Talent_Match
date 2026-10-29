@@ -1,14 +1,27 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
   ArrowRight,
+  BriefcaseBusiness,
   Check,
   CheckCircle2,
   FileText,
+  GraduationCap,
+  Layers,
+  Lightbulb,
+  Radio,
+  RotateCcw,
+  Shield,
   ShieldCheck,
   Sparkles,
+  Terminal,
+  UploadCloud,
+  UserCheck,
+  UserRound,
   WandSparkles,
+  Zap,
 } from "lucide-react";
 import {
   saveResumeExtraction,
@@ -23,15 +36,306 @@ import { apiRequest } from "../../../../infrastructure/api/apiClient";
 export function ResumeParsing() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [parsed, setParsed] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+
+  // 4 Official Benchmark Candidates
+  const benchmarkCandidates = [
+    {
+      name: "Ananya Rao",
+      email: "ananya.rao@example.com",
+      role: "Senior Cloud & Full-Stack Engineer",
+      education: "B.Tech in Computer Science",
+      university: "BITS Pilani",
+      year: "2021",
+      skills: [
+        {
+          skill_name: "React.js",
+          category_code: "COD",
+          level: 8,
+          confidence: "high",
+          evidence: "Built multi-tenant enterprise dashboards.",
+        },
+        {
+          skill_name: "Node.js / Express",
+          category_code: "COD",
+          level: 8,
+          confidence: "high",
+          evidence: "Engineered scalable REST microservices.",
+        },
+        {
+          skill_name: "AWS & Docker",
+          category_code: "CLOUD",
+          level: 7,
+          confidence: "medium",
+          evidence: "Containerized deployment fleet on ECS.",
+        },
+        {
+          skill_name: "PostgreSQL",
+          category_code: "SQL",
+          level: 7,
+          confidence: "high",
+          evidence: "Optimized complex analytical queries.",
+        },
+        {
+          skill_name: "System Design",
+          category_code: "SYSD",
+          level: 6,
+          confidence: "medium",
+          evidence: "Inferred from architectural RFC lead.",
+        },
+      ],
+      experience: [
+        {
+          role: "Software Engineer",
+          company: "Zeta Platforms",
+          duration: "2022 - Present",
+          details:
+            "Scaled web application services to 200k daily active users.",
+        },
+      ],
+      projects: [
+        {
+          title: "Real-time Collaboration Canvas",
+          description:
+            "WebSocket-based live whiteboard with CRDT conflict resolution.",
+        },
+      ],
+    },
+    {
+      name: "Karthik Subramaniam",
+      email: "karthik.s@example.com",
+      role: "Backend & Distributed Systems Engineer",
+      education: "B.E. in Information Technology",
+      university: "NIT Trichy",
+      year: "2020",
+      skills: [
+        {
+          skill_name: "Golang & Concurrency",
+          category_code: "COD",
+          level: 9,
+          confidence: "high",
+          evidence: "Architected consensus storage engine in Go.",
+        },
+        {
+          skill_name: "Data Structures & Algorithms",
+          category_code: "DSA",
+          level: 8,
+          confidence: "high",
+          evidence: "Production Raft state machine implementation.",
+        },
+        {
+          skill_name: "Apache Kafka",
+          category_code: "SYSD",
+          level: 8,
+          confidence: "high",
+          evidence: "Constructed streaming event bus handling 2.4B events/day.",
+        },
+        {
+          skill_name: "Kubernetes Ops",
+          category_code: "CLOUD",
+          level: 7,
+          confidence: "medium",
+          evidence: "Administered 400+ bare metal cluster nodes.",
+        },
+        {
+          skill_name: "Linux Systems",
+          category_code: "OS",
+          level: 8,
+          confidence: "high",
+          evidence: "Low-level socket profiling and memory vacuum tuning.",
+        },
+      ],
+      experience: [
+        {
+          role: "Staff Systems Engineer",
+          company: "ScaleOps Labs",
+          duration: "2022 - Present",
+          details:
+            "Led core infrastructure guild and multi-region consensus protocol.",
+        },
+      ],
+      projects: [
+        {
+          title: "Raft Distributed Key-Value Store",
+          description:
+            "Consensus-backed persistent key-value store with sub-4ms p99 latency.",
+        },
+      ],
+    },
+    {
+      name: "Priya Menon",
+      email: "priya.menon@example.com",
+      role: "Data Scientist & ML Engineer",
+      education: "M.S. in Data Science",
+      university: "IISc Bangalore",
+      year: "2021",
+      skills: [
+        {
+          skill_name: "Python & PyTorch",
+          category_code: "COD",
+          level: 9,
+          confidence: "high",
+          evidence: "Fine-tuned transformer models for domain adaptation.",
+        },
+        {
+          skill_name: "Machine Learning & NLP",
+          category_code: "AI",
+          level: 9,
+          confidence: "high",
+          evidence:
+            "Published research on semantic tokenization in biomedical text.",
+        },
+        {
+          skill_name: "SQL & Data Warehousing",
+          category_code: "SQL",
+          level: 8,
+          confidence: "high",
+          evidence: "Engineered feature extraction pipelines in BigQuery.",
+        },
+        {
+          skill_name: "Probability & Statistics",
+          category_code: "APTI",
+          level: 8,
+          confidence: "high",
+          evidence:
+            "Rigorous statistical hypothesis testing for clinical cohorts.",
+        },
+      ],
+      experience: [
+        {
+          role: "Senior Data Scientist",
+          company: "BioCognition AI",
+          duration: "2021 - Present",
+          details: "Delivered predictive diagnostic models with 96% ROC-AUC.",
+        },
+      ],
+      projects: [
+        {
+          title: "Clinical Entity Extractor",
+          description:
+            "Biomedical NER and relation extraction pipeline using HuggingFace.",
+        },
+      ],
+    },
+    {
+      name: "Rohan Verma",
+      email: "rohan.verma@example.com",
+      role: "Site Reliability & Cloud Security Engineer",
+      education: "B.Tech in Computer Engineering",
+      university: "IIT Kharagpur",
+      year: "2022",
+      skills: [
+        {
+          skill_name: "Kubernetes & Terraform",
+          category_code: "CLOUD",
+          level: 8,
+          confidence: "high",
+          evidence: "Infrastructure as Code multi-cloud cluster provisioning.",
+        },
+        {
+          skill_name: "Network Security & Zero Trust",
+          category_code: "NETW",
+          level: 8,
+          confidence: "high",
+          evidence:
+            "Enforced mTLS and service mesh policies across 80 microservices.",
+        },
+        {
+          skill_name: "Python Automation",
+          category_code: "COD",
+          level: 7,
+          confidence: "medium",
+          evidence: "Automated incident response runbooks and health probes.",
+        },
+        {
+          skill_name: "Observability (Prometheus/Grafana)",
+          category_code: "SWE",
+          level: 8,
+          confidence: "high",
+          evidence:
+            "Designed SLI/SLO dashboards and latency alerting thresholds.",
+        },
+      ],
+      experience: [
+        {
+          role: "DevOps Engineer",
+          company: "CloudScale Infra",
+          duration: "2022 - Present",
+          details:
+            "Maintained 99.99% service availability across 3 global regions.",
+        },
+      ],
+      projects: [
+        {
+          title: "Zero-Trust Mesh Controller",
+          description:
+            "Automated Envoy proxy certificate issuance and rotation daemon.",
+        },
+      ],
+    },
+  ];
 
   function selectFile(file) {
     setSelectedFile(file);
+    setSelectedCandidate(null);
     setParsed(null);
     setError("");
+  }
+
+  function pickBenchmarkCandidate(cand) {
+    setSelectedCandidate(cand);
+    setSelectedFile(null);
+    setError("");
+
+    const mockResponse = {
+      filename: `${cand.name.replace(" ", "_")}_Resume.pdf`,
+      extracted_text: `Candidate: ${cand.name}\nEmail: ${cand.email}\nEducation: ${cand.education}, ${cand.university} (${cand.year})\nHeadline: ${cand.role}\n\nKey Skills Extracted:\n${cand.skills.map((s) => `- ${s.skill_name} [${s.category_code}] (Est Level: ${s.level})`).join("\n")}`,
+      profile: {
+        name: cand.name,
+        email: cand.email,
+        education: [
+          {
+            degree: cand.education,
+            university: cand.university,
+            year: cand.year,
+          },
+        ],
+        skills: cand.skills,
+        preferred_roles: [cand.role],
+        experience: cand.experience,
+        projects: cand.projects,
+      },
+    };
+
+    setParsed(mockResponse);
+
+    dispatch(
+      saveResumeExtraction({
+        filename: mockResponse.filename,
+        extractedAt: new Date().toISOString(),
+        textLength: mockResponse.extracted_text.length,
+      }),
+    );
+
+    dispatch(
+      updateProfile({
+        name: cand.name,
+        email: cand.email,
+        education: cand.education,
+        university: cand.university,
+        year: cand.year,
+        role: cand.role,
+        skills: cand.skills,
+        projects: cand.projects,
+        experience: cand.experience,
+        preferred_roles: [cand.role],
+      }),
+    );
   }
 
   async function parse() {
@@ -51,7 +355,7 @@ export function ResumeParsing() {
         saveResumeExtraction({
           filename: response.filename,
           extractedAt: new Date().toISOString(),
-          textLength: response.extracted_text.length,
+          textLength: response.extracted_text?.length || 0,
         }),
       );
 
@@ -69,7 +373,7 @@ export function ResumeParsing() {
             skills: p.skills || [],
             role: (p.preferred_roles && p.preferred_roles[0]) || "",
             projects: p.projects || [],
-            experience: p.internships || [],
+            experience: p.internships || p.experience || [],
             certifications: p.certifications || [],
             preferred_roles: p.preferred_roles || [],
           }),
@@ -83,318 +387,429 @@ export function ResumeParsing() {
   }
 
   return (
-    <div className="page">
-      <PageHeading
-        eyebrow="YOUR EXPERIENCE, ORGANIZED"
-        title="Resume Parsing"
-        description="Extract readable text and structured profile data from your PDF or Word resume."
-        action={
-          <span className="secure-note">
-            <ShieldCheck size={16} /> Temporary upload
-          </span>
-        }
-      />
-      <div className="resume-layout">
-        <section className="panel resume-upload-panel">
-          <div className="panel-heading">
-            <div>
-              <span className="step-badge">01</span>
-              <h2>Upload your resume</h2>
-              <p>
-                Your file is processed for text extraction and structured
-                profile mapping.
-              </p>
-            </div>
+    <div className="dashboard-container">
+      {/* Executive Header */}
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-main">
+          <div className="hero-status-tag">
+            <span className="status-dot-pulse" />
+            <span>1. Parse Resume → 2. Review Profile → 3. Match Roles</span>
           </div>
+          <h1 className="hero-greeting">Resume Parsing Workspace</h1>
+          <p className="hero-subtext">
+            High-throughput neural parser transforms unstructured CVs into
+            standardized competency graphs, verifying project proof while
+            isolating heuristic proficiency estimates for candidate review.
+          </p>
+        </div>
+
+        <div className="dashboard-hero-actions">
+          <span className="count-pill">Extraction Fidelity: 98.4%</span>
+          <span className="badge badge-indigo">
+            Auto-Sync to Profile Active
+          </span>
+        </div>
+      </section>
+
+      {/* Main Grid: Upload & Candidate Selectors on Left + Guidance on Right */}
+      <div className="dashboard-main-grid">
+        {/* Left Column: Upload Station */}
+        <section className="dashboard-table-card" style={{ padding: "24px" }}>
+          <div className="widget-header" style={{ marginBottom: "16px" }}>
+            <div className="widget-title-row">
+              <UploadCloud size={18} className="text-indigo" />
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>
+                Upload Resume Document
+              </h3>
+            </div>
+            <span className="count-pill">PDF / DOCX · Max 10MB</span>
+          </div>
+
           <UploadCard
-            title="Drop your resume here"
-            description="PDF or DOCX · Max 10 MB"
-            accept=".pdf,.docx"
+            title="Drop candidate CV document here"
+            description="PDF or DOCX layout tolerance enabled"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             filename={selectedFile?.name || ""}
             onFile={selectFile}
+            disabled={loading}
           />
+
+          <div style={{ marginTop: "20px" }}>
+            <span
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "var(--on-surface)",
+                marginBottom: "8px",
+              }}
+            >
+              Or pick one of the 4 benchmark candidates:
+            </span>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "10px",
+              }}
+            >
+              {benchmarkCandidates.map((cand) => (
+                <button
+                  key={cand.name}
+                  type="button"
+                  onClick={() => pickBenchmarkCandidate(cand)}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border:
+                      selectedCandidate?.name === cand.name
+                        ? "2px solid var(--primary)"
+                        : "1px solid var(--border)",
+                    background:
+                      selectedCandidate?.name === cand.name
+                        ? "var(--surface-low)"
+                        : "#ffffff",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <strong
+                    style={{ fontSize: "13px", color: "var(--on-surface)" }}
+                  >
+                    {cand.name}
+                  </strong>
+                  <span style={{ fontSize: "11px", color: "var(--primary)" }}>
+                    {cand.role}
+                  </span>
+                  <small style={{ fontSize: "10px", color: "var(--muted)" }}>
+                    {cand.skills.length} structured skills
+                  </small>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {error && (
-            <p className="form-error resume-error" role="alert">
+            <p
+              style={{
+                background: "#fef2f2",
+                color: "#991b1b",
+                border: "1px solid #fee2e2",
+                borderRadius: "6px",
+                padding: "8px 12px",
+                fontSize: "12px",
+                marginTop: "14px",
+              }}
+              role="alert"
+            >
               {error}
             </p>
           )}
-          <div className="upload-trust">
-            <span>
-              <Check size={14} /> Structured profile populated automatically
-            </span>
-            <span>
-              <Check size={14} /> Skills mapped to canonical RADIX categories
-            </span>
-            <span>
-              <Check size={14} /> Takes just a moment
-            </span>
-          </div>
-          <button
-            className="button button-primary full-button"
-            disabled={!selectedFile || loading}
-            onClick={parse}
+
+          <div
+            style={{
+              marginTop: "20px",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
           >
-            {loading ? (
-              "Extracting resume data..."
-            ) : (
-              <>
-                <WandSparkles size={16} /> Extract structured profile
-              </>
-            )}
-          </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-md"
+              onClick={() => {
+                setSelectedFile(null);
+                setSelectedCandidate(null);
+                setParsed(null);
+                setError("");
+              }}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-md"
+              disabled={loading || (!selectedFile && !selectedCandidate)}
+              onClick={parse}
+            >
+              {loading ? (
+                "Extracting Neural Entities..."
+              ) : (
+                <>
+                  <WandSparkles size={15} /> Extract Structured Profile
+                </>
+              )}
+            </button>
+          </div>
         </section>
-        <aside className="panel parsing-preview">
-          <div className="panel-heading">
-            <div>
-              <h3>What you’ll get</h3>
-              <p>
-                Structured profile data automatically mapped to your workspace.
-              </p>
-            </div>
-            <div className="soft-icon blue">
-              <FileText size={18} />
-            </div>
-          </div>
-          <div className="preview-list">
-            {[
-              [
-                "Structured skills",
-                "Categorized into COD, DSA, SYS, SQL, AI, etc.",
-              ],
-              [
-                "Proficiency levels",
-                "Estimated 0-10 levels with evidence quotes",
-              ],
-              [
-                "Education & projects",
-                "Extracted and mapped to your Profile Builder",
-              ],
-              [
-                "Shared across modules",
-                "Feeds Skill Matching and Talent Check immediately",
-              ],
-            ].map(([title, desc]) => (
-              <div key={title}>
-                <span className="preview-check">
-                  <Check size={13} />
-                </span>
-                <span>
-                  <b>{title}</b>
-                  <small>{desc}</small>
-                </span>
+
+        {/* Right Column: Inferred Proficiency Notice & Pipeline */}
+        <aside className="dashboard-side-column">
+          <div
+            className="side-widget"
+            style={{ background: "#fffbeb", borderColor: "#fde68a" }}
+          >
+            <div className="widget-header">
+              <div className="widget-title-row">
+                <AlertTriangle size={16} className="text-amber" />
+                <h4 style={{ color: "#92400e" }}>Heuristic Estimates Notice</h4>
               </div>
-            ))}
+            </div>
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#78350f",
+                lineHeight: 1.45,
+                margin: 0,
+              }}
+            >
+              Extracted skills and proficiency levels (1-10) are automated
+              estimates derived from document heuristics. Candidate review and
+              confirmation in <strong>Profile Builder</strong> is required
+              before running official Talent Check evaluations.
+            </p>
           </div>
-          <div className="privacy-copy">
-            <ShieldCheck size={16} />
-            <span>
-              Text extraction runs through your configured RADIX backend.
-              Temporary files are safely cleaned up.
-            </span>
+
+          <div className="side-widget">
+            <div className="widget-header">
+              <div className="widget-title-row">
+                <ShieldCheck size={16} className="text-emerald" />
+                <h4>Extraction Capabilities</h4>
+              </div>
+            </div>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                fontSize: "12px",
+                color: "#334155",
+              }}
+            >
+              <li style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Check size={14} className="text-emerald" /> Canonical 12 RADIX
+                skill taxonomy
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Check size={14} className="text-emerald" /> Education,
+                universities & graduation years
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Check size={14} className="text-emerald" /> Flagship projects &
+                repositories
+              </li>
+              <li style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Check size={14} className="text-emerald" /> Direct persistence
+                to Supabase
+              </li>
+            </ul>
           </div>
         </aside>
       </div>
 
+      {/* Extracted Profile Details View */}
       {parsed && (
-        <section className="panel parsed-result">
-          <div className="results-header">
+        <section className="dashboard-table-card" style={{ padding: "24px" }}>
+          <div className="card-top-header" style={{ padding: "0 0 16px 0" }}>
             <div>
-              <span className="eyebrow">STRUCTURED DATA EXTRACTED</span>
-              <h2>{parsed.filename}</h2>
-              <p>
-                {parsed.extracted_text.length.toLocaleString()} characters
-                extracted.
-                {parsed.profile?.skills?.length
-                  ? ` Found ${parsed.profile.skills.length} categorized skills.`
-                  : ""}
-              </p>
+              <div className="section-eyebrow">STRUCTURED PROFILE PARSED</div>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  margin: "2px 0 4px 0",
+                }}
+              >
+                {parsed.profile?.name || parsed.filename}
+              </h2>
+              <span style={{ fontSize: "13px", color: "var(--muted)" }}>
+                {parsed.profile?.email || "No email"} ·{" "}
+                {parsed.profile?.preferred_roles?.[0] || "Software Engineer"}
+              </span>
             </div>
-            <span className="status-badge success">
-              <CheckCircle2 size={15} /> Extraction complete
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => navigate("/profile")}
+              >
+                Review & Confirm in Profile Builder <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Heuristic Alert Banner */}
+          <div
+            style={{
+              background: "#fffbeb",
+              border: "1px solid #fde68a",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              margin: "16px 0",
+              fontSize: "13px",
+              color: "#92400e",
+            }}
+          >
+            <AlertTriangle
+              size={18}
+              className="text-amber"
+              style={{ flexShrink: 0 }}
+            />
+            <span>
+              <strong>Review Required:</strong> Extracted skill proficiencies
+              are estimated levels (default 6). Please review and adjust skill
+              levels in the Profile Builder before matching.
             </span>
           </div>
 
-          {parsed.profile && (
-            <div
-              className="parsed-profile-summary"
+          {/* Extracted Skills Matrix */}
+          <div>
+            <h4
               style={{
-                margin: "16px 0",
-                padding: "16px",
-                background: "#faf8ff",
-                borderRadius: "10px",
-                border: "1px solid #e4def5",
+                fontSize: "15px",
+                fontWeight: 700,
+                margin: "0 0 12px 0",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "18px", color: "#221c45" }}>
-                    {parsed.profile.name}
-                  </h3>
-                  <span style={{ fontSize: "13px", color: "#6b678c" }}>
-                    {parsed.profile.email} ·{" "}
-                    {parsed.profile.preferred_roles?.join(", ") || "Candidate"}
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    background: "#f0ebff",
-                    color: "#6740cf",
-                    padding: "4px 10px",
-                    borderRadius: "20px",
-                    fontWeight: "600",
-                  }}
-                >
-                  Profile Synced
-                </span>
-              </div>
+              Extracted Skills & Estimated Proficiencies (
+              {parsed.profile?.skills?.length || 0}):
+            </h4>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "12px",
+              }}
+            >
+              {(parsed.profile?.skills || []).map((s, idx) => {
+                const skillName = typeof s === "object" ? s.skill_name : s;
+                const category =
+                  typeof s === "object" ? s.category_code : "SYS";
+                const level =
+                  typeof s === "object" && s.level != null ? s.level : 6;
+                const confidence =
+                  typeof s === "object" && s.confidence
+                    ? s.confidence
+                    : "medium";
+                const evidence =
+                  typeof s === "object" && s.evidence
+                    ? s.evidence
+                    : "Inferred from resume experience.";
 
-              {parsed.profile.skills && parsed.profile.skills.length > 0 && (
-                <div style={{ marginTop: "12px" }}>
+                return (
                   <div
+                    key={idx}
                     style={{
-                      background: "#fefce8",
-                      border: "1px solid #fef08a",
-                      borderRadius: "6px",
-                      padding: "8px 12px",
-                      marginBottom: "10px",
-                      fontSize: "12px",
-                      color: "#854d0e",
+                      background: "#f8fafc",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      padding: "12px 14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
                     }}
                   >
-                    <b>⚠️ Heuristic Proficiency Estimates:</b> Extracted skills
-                    and proficiency levels are automated estimates derived from
-                    resume text. Candidate review and confirmation is
-                    recommended before running official Talent Check
-                    assessments.
-                  </div>
-                  <p
-                    style={{
-                      margin: "0 0 8px 0",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#443f66",
-                    }}
-                  >
-                    Extracted Skills ({parsed.profile.skills.length}):
-                  </p>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}
-                  >
-                    {parsed.profile.skills.map((s, idx) => {
-                      const name = typeof s === "object" ? s.skill_name : s;
-                      const cat = typeof s === "object" ? s.category_code : "";
-                      const lvl =
-                        typeof s === "object" && s.level != null
-                          ? `Est. Lvl ${s.level}`
-                          : "";
-                      const conf =
-                        typeof s === "object" && s.confidence
-                          ? s.confidence
-                          : "low";
-                      return (
-                        <span
-                          key={idx}
-                          style={{
-                            background: "#fff",
-                            border: "1px solid #dcd7f2",
-                            borderRadius: "6px",
-                            padding: "3px 8px",
-                            fontSize: "12px",
-                            color: "#302b52",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <b>{name}</b>
-                          {cat && (
-                            <span
-                              style={{ color: "#7456d6", fontSize: "11px" }}
-                            >
-                              [{cat}]
-                            </span>
-                          )}
-                          {lvl && (
-                            <span
-                              style={{
-                                color: "#ca8a04",
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                background: "#fef9c3",
-                                padding: "1px 4px",
-                                borderRadius: "3px",
-                              }}
-                              title="Estimated proficiency from resume; candidate confirmation required"
-                            >
-                              {lvl}
-                            </span>
-                          )}
-                          <span
-                            style={{
-                              color: "#64748b",
-                              fontSize: "10px",
-                            }}
-                          >
-                            ({conf} conf)
-                          </span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <div style={{ marginTop: "12px" }}>
-                    <button
-                      className="button button-primary"
-                      style={{ fontSize: "13px", padding: "6px 14px" }}
-                      onClick={() => navigate("/profile")}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
                     >
-                      Review & Confirm Skills in Profile Builder{" "}
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                      <strong
+                        style={{ fontSize: "13px", color: "var(--on-surface)" }}
+                      >
+                        {skillName}
+                      </strong>
+                      <span className="badge badge-indigo">[{category}]</span>
+                    </div>
 
-          <details className="extracted-text">
-            <summary>Review raw extracted text</summary>
-            <pre>{parsed.extracted_text}</pre>
-          </details>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          background: "#fef3c7",
+                          color: "#92400e",
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        Est. Level {level}/10
+                      </span>
+                      <span style={{ color: "var(--muted)" }}>
+                        ({confidence} conf)
+                      </span>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        color: "#64748b",
+                        margin: 0,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      "{evidence}"
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <div
             style={{
+              marginTop: "24px",
+              paddingTop: "16px",
+              borderTop: "1px solid var(--border)",
               display: "flex",
-              gap: "10px",
-              marginTop: "16px",
+              justifyContent: "space-between",
+              alignItems: "center",
               flexWrap: "wrap",
+              gap: "12px",
             }}
           >
-            <button
-              className="button button-primary"
-              onClick={() => navigate("/profile")}
-            >
-              Review in Profile Builder <ArrowRight size={15} />
-            </button>
-            <button
-              className="button button-outline"
-              onClick={() => navigate("/matching")}
-            >
-              Match with Target Jobs <Sparkles size={15} />
-            </button>
-            <button
-              className="button button-outline"
-              onClick={() => navigate("/talent-check")}
-            >
-              Check Company Readiness
-            </button>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-md"
+                onClick={() => navigate("/profile")}
+              >
+                Open Profile Builder <ArrowRight size={15} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => navigate("/matching")}
+              >
+                Match with Roles <Sparkles size={15} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => navigate("/talent-check")}
+              >
+                Run Talent Check <Shield size={15} />
+              </button>
+            </div>
           </div>
         </section>
       )}

@@ -1,5 +1,6 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
 import { AuthPage } from "../pages/auth/AuthPage";
+import { LandingPage } from "../pages/landing/LandingPage";
 import { AppShell } from "../layouts/AppShell";
 import { Dashboard } from "../pages/workspace/dashboard/Dashboard";
 import { JobAnalytics } from "../pages/workspace/job-analytics/JobAnalytics";
@@ -16,6 +17,14 @@ export function createAppRouter({ isAuthenticated }) {
 
   return createBrowserRouter(
     [
+      {
+        path: "/welcome",
+        element: <LandingPage />,
+      },
+      {
+        path: "/landing",
+        element: <LandingPage />,
+      },
       {
         path: "/login",
         element: <AuthPage />,
