@@ -6,3 +6,9 @@ python-docx
 groq
 python-dotenv
 supabase
+RapidFuzz
+
+# Test dependencies
+pytest
+httpx
+supabase
