@@ -77,9 +77,34 @@ export function SkillMatching() {
     () => jobDescriptions.find((job) => job.id === selectedJobId) || null,
     [jobDescriptions, selectedJobId],
   );
+
+  const effectiveProfile = useMemo(() => {
+    if (candidateProfile) return candidateProfile;
+    if (profile && (profile.skills?.length > 0 || profile.name)) {
+      return {
+        id: profile.backendProfileId || profile.id || "current-profile",
+        name: profile.name || "Candidate",
+        email: profile.email || "",
+        skills: profile.skills || [],
+        preferred_roles:
+          profile.preferred_roles || (profile.role ? [profile.role] : []),
+        education: profile.education
+          ? [
+              {
+                degree: profile.education || "",
+                university: profile.university || "",
+                year: profile.year || "",
+              },
+            ]
+          : [],
+      };
+    }
+    return null;
+  }, [candidateProfile, profile]);
+
   const candidateSkills = useMemo(
     () =>
-      (candidateProfile?.skills || []).map((skill) =>
+      (effectiveProfile?.skills || []).map((skill) =>
         typeof skill === "string"
           ? {
               skill_name: skill,
@@ -89,7 +114,7 @@ export function SkillMatching() {
             }
           : skill,
       ),
-    [candidateProfile],
+    [effectiveProfile],
   );
 
   useEffect(() => {
@@ -130,7 +155,10 @@ export function SkillMatching() {
     let active = true;
 
     async function loadCandidateProfile() {
-      if (!profile.backendProfileId) {
+      const pid =
+        profile.backendProfileId ||
+        localStorage.getItem("radix-saved-profile-id");
+      if (!pid) {
         setCandidateProfile(null);
         setProfileLoading(false);
         setProfileError("");
@@ -140,7 +168,7 @@ export function SkillMatching() {
       setProfileLoading(true);
       setProfileError("");
       try {
-        const savedProfile = await getProfile(profile.backendProfileId);
+        const savedProfile = await getProfile(pid);
         if (active) setCandidateProfile(savedProfile);
       } catch (requestError) {
         if (active) setProfileError(requestError.message);
@@ -162,14 +190,14 @@ export function SkillMatching() {
   }
 
   async function runMatching() {
-    if (!selectedJob || !candidateProfile) return;
+    if (!selectedJob || !effectiveProfile) return;
     setMatching(true);
     setMatchError("");
     try {
       const matchResult = await runSkillMatch({
         candidateSkills,
         jdSkills: selectedJob.skills || [],
-        candidateId: profile.backendProfileId,
+        candidateId: effectiveProfile.id,
         jdSourceFile: selectedJob.source_file,
         company: selectedJob.company,
         role: selectedJob.role,
@@ -203,28 +231,28 @@ export function SkillMatching() {
         description="Compare your profile skills against requirements extracted from a saved job description."
         action={<span className="secure-note">Saved JD data</span>}
       />
-      {candidateProfile && (
+      {effectiveProfile && (
         <section className="panel candidate-match-preview">
           <div className="candidate-match-heading">
             <div className="candidate-match-avatar">
-              {(candidateProfile.name || "C").charAt(0).toUpperCase()}
+              {(effectiveProfile.name || "C").charAt(0).toUpperCase()}
             </div>
             <div>
               <span className="eyebrow">CANDIDATE PROFILE</span>
-              <h2>{candidateProfile.name || "Candidate"}</h2>
-              <p>{candidateProfile.email || "No email provided"}</p>
+              <h2>{effectiveProfile.name || "Candidate"}</h2>
+              <p>{effectiveProfile.email || "No email provided"}</p>
             </div>
             <span className="status-badge">
               {candidateSkills.length} profile skills
             </span>
           </div>
           <div className="candidate-match-meta">
-            {(candidateProfile.preferred_roles || []).length > 0 && (
+            {(effectiveProfile.preferred_roles || []).length > 0 && (
               <span>
-                Preferred role: {candidateProfile.preferred_roles.join(", ")}
+                Preferred role: {effectiveProfile.preferred_roles.join(", ")}
               </span>
             )}
-            {(candidateProfile.education || []).map((education, index) => (
+            {(effectiveProfile.education || []).map((education, index) => (
               <span key={`${education.university}-${index}`}>
                 {[education.degree, education.university, education.year]
                   .filter(Boolean)
@@ -285,7 +313,7 @@ export function SkillMatching() {
             disabled={
               !selectedJob ||
               !hasSkills ||
-              !candidateProfile ||
+              !effectiveProfile ||
               !hasProfileSkills ||
               matching ||
               profileLoading
@@ -310,23 +338,23 @@ export function SkillMatching() {
           Could not load your saved profile: {profileError}
         </p>
       )}
-      {!profileLoading && !profile.backendProfileId && (
+      {!profileLoading && !effectiveProfile && (
         <div className="panel no-results">
           <Target size={22} />
-          <h3>Save your profile to continue</h3>
+          <h3>No profile found</h3>
           <p>
-            Skill Matching uses the profile saved from Profile Builder. Save
-            your profile there before running a match.
+            Build your profile in Profile Builder or parse a resume to compare
+            against job descriptions.
           </p>
           <Link className="button button-outline" to="/profile">
             Go to Profile Builder <ArrowRight size={15} />
           </Link>
         </div>
       )}
-      {!profileLoading && candidateProfile && !hasProfileSkills && (
+      {!profileLoading && effectiveProfile && !hasProfileSkills && (
         <div className="panel no-results">
           <Target size={22} />
-          <h3>No skills in your saved profile</h3>
+          <h3>No skills in your profile</h3>
           <p>Add profile skills before comparing against a job description.</p>
           <Link className="button button-outline" to="/profile">
             Add profile skills <ArrowRight size={15} />
@@ -440,7 +468,7 @@ export function SkillMatching() {
               type="partial"
             />
             <MatchSkills
-              title="Not found in profile"
+              title="Not found in profile (Gap List)"
               skills={result.missing_skills}
               type="missing"
             />

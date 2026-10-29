@@ -95,20 +95,11 @@ def test_company_and_candidate_selection_options(monkeypatch):
     assert companies.status_code == 200
     assert companies.json() == {"companies": ["Northstar Tech", "DataForge"]}
     assert candidates.status_code == 200
-<<<<<<< HEAD
-    candidate_ids = [c["id"] for c in candidates.json()["candidates"]]
-    assert "demo-candidate" in candidate_ids
-    assert "ananya-rao" in candidate_ids
-    assert "karthik-subramaniam" in candidate_ids
-    assert "priya-menon" in candidate_ids
-    assert "rohan-verma" in candidate_ids
-=======
     assert candidates.json() == {
         "candidates": [
             {"id": SAVED_CANDIDATE["id"], "name": SAVED_CANDIDATE["name"]}
         ]
     }
->>>>>>> 8cf6984 (api link)
 
 
 def test_company_options_return_503_when_dataset_is_missing(monkeypatch):

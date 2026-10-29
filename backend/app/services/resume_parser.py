@@ -1,24 +1,34 @@
 """Structured resume parser for RADIX Talent Match.
 
-Extracts structured candidate profile data from resume text:
+Extracts structured candidate profile data from resume text using the same
+LLM-extraction pattern as JD Analytics, with fallback to deterministic regex heuristics:
 - Personal details (name, email)
 - Education (degree, university, year)
 - Skills with category_code, evidence, confidence, and proficiency level (0-10)
   Inferred levels and confidences are clearly marked as unconfirmed estimates
   requiring candidate review/confirmation before verified benchmarking.
 - Projects (title, description)
-- Internships / Hackathons / Experience
+- Internships / Experience
+- Hackathons / Competitions
 - Certifications
 - Preferred Roles
 """
+import json
+import logging
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from dotenv import load_dotenv
+
 from app.schemas.common import SkillCategoryCode, SkillEvidence
 from app.schemas.profile import CandidateProfile, Education, Project
+from app.utils.skill_categories import SKILL_CATEGORIES, is_valid_category
 
-# Canonical Skill Categories mapping
+load_dotenv()
+logger = logging.getLogger(__name__)
+
+# Canonical Skill Categories mapping for regex fallback
 CATEGORY_MAP: Dict[str, SkillCategoryCode] = {
     # COD
     "python": "COD", "c++": "COD", "cpp": "COD", "java": "COD", "c": "COD",
@@ -98,6 +108,7 @@ def _extract_sections(text: str) -> Dict[str, str]:
         ("skills", r"(?:^|\n)\s*(?:technical skills|skills & expertise|skills|core competencies|technologies)\s*(?:\n|:|\b)"),
         ("projects", r"(?:^|\n)\s*(?:projects|key projects|academic projects)\s*(?:\n|:|\b)"),
         ("experience", r"(?:^|\n)\s*(?:work experience|experience|internships?|employment history)\s*(?:\n|:|\b)"),
+        ("hackathons", r"(?:^|\n)\s*(?:hackathons?|competitions?|achievements?|contests?)\s*(?:\n|:|\b)"),
         ("certifications", r"(?:^|\n)\s*(?:certifications?|certificates?|licenses?)\s*(?:\n|:|\b)"),
         ("preferred_roles", r"(?:^|\n)\s*(?:preferred roles?|target roles?|objective|career objective)\s*(?:\n|:|\b)"),
     ]
@@ -177,12 +188,6 @@ def _extract_projects(sec_text: str) -> List[Project]:
 
 
 def _estimate_level(skill_norm: str, full_text: str) -> Tuple[int, str, str]:
-    """Estimate a 0-10 proficiency level and confidence based on mentions and contextual evidence.
-
-    Returns:
-        (level, confidence, note)
-    All return values are provisional estimates marked for candidate confirmation.
-    """
     lower_text = full_text.lower()
     has_elementary = bool(re.search(rf"\b{re.escape(skill_norm)}\s*\((?:basic|exposure|elementary|beginner)\)", lower_text))
     has_project_evidence = bool(re.search(rf"\b(?:built|designed|implemented|shipped|developed|created).*{re.escape(skill_norm)}", lower_text))
@@ -195,11 +200,10 @@ def _estimate_level(skill_norm: str, full_text: str) -> Tuple[int, str, str]:
     if has_project_evidence:
         return 6, "medium", f"Demonstrated in project/coursework [Estimate: review required]"
 
-    # Mentioned in skill list or text without active project description
     return 5, "low", f"Listed in resume [Estimate: review required]"
 
 
-def _extract_skills(sec_text: str, full_text: str) -> List[SkillEvidence]:
+def _extract_skills_regex(sec_text: str, full_text: str) -> List[SkillEvidence]:
     skills: List[SkillEvidence] = []
     seen = set()
 
@@ -245,7 +249,6 @@ def _extract_skills(sec_text: str, full_text: str) -> List[SkillEvidence]:
                 review_status="pending_confirmation",
             ))
 
-    # Also scan full text for core known skills if skills section was sparse
     if len(skills) < 3:
         for known_skill, cat in CATEGORY_MAP.items():
             if known_skill in seen:
@@ -269,8 +272,180 @@ def _extract_skills(sec_text: str, full_text: str) -> List[SkillEvidence]:
     return skills
 
 
-def parse_resume_to_structured_profile(text: str, filename: Optional[str] = None) -> CandidateProfile:
-    """Parse raw resume text into a CandidateProfile with reviewable inferred skills."""
+def parse_resume_with_llm(text: str) -> Optional[CandidateProfile]:
+    """Extract structured resume profile using Groq LLM (Component 02)."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        from groq import Groq
+        client = Groq(api_key=api_key)
+        model = os.getenv("RADIX_LLM_MODEL", "openai/gpt-oss-120b")
+
+        prompt = f"""
+Analyze the following candidate resume text.
+
+Extract:
+1. Candidate full name.
+2. Candidate email address.
+3. Education: list of objects with degree, university, year.
+4. Skills: list of technical skills and technologies found in the resume.
+   Assign exactly one category_code to each skill:
+   {json.dumps(SKILL_CATEGORIES)}
+   Include:
+   - skill_name
+   - category_code: (COD, DSA, OOD, APTI, COMM, AI, CLOUD, SQL, SWE, SYSD, NETW, OS, or OTHER)
+   - evidence: short quotation or context sentence from the resume
+   - confidence: "medium" or "low" (do not use "high" because resume extraction is provisional)
+   - level: integer proficiency estimate from 1 to 10 based on projects/experience (e.g. 8 for capstone/production, 6 for project, 5 for mention)
+5. Projects: list of objects with title and description.
+6. Experience / Internships: list of strings or objects.
+7. Hackathons: list of hackathons, competitions, or awards.
+8. Certifications: list of certification titles.
+9. Preferred roles: list of target roles.
+
+Return only valid JSON with this structure:
+{{
+  "name": "Candidate Name",
+  "email": "candidate@example.com",
+  "education": [
+    {{"degree": "Degree", "university": "University", "year": "2026"}}
+  ],
+  "skills": [
+    {{
+      "skill_name": "Python",
+      "category_code": "COD",
+      "evidence": "Evidence quote from resume",
+      "confidence": "medium",
+      "level": 7
+    }}
+  ],
+  "projects": [
+    {{"title": "Project Title", "description": "Project description"}}
+  ],
+  "internships": ["Internship or experience"],
+  "hackathons": ["Hackathon achievement"],
+  "certifications": ["Certification name"],
+  "preferred_roles": ["Software Engineer"]
+}}
+
+RESUME TEXT:
+{text}
+"""
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert technical resume parser for RADIX Talent Match. "
+                        "Extract structured candidate information precisely according to the JSON format."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0,
+            response_format={"type": "json_object"},
+        )
+
+        data = json.loads(response.choices[0].message.content)
+        name = data.get("name") or "Candidate"
+        email = data.get("email") or _extract_email(text, name)
+
+        education_raw = data.get("education") or []
+        education: List[Education] = []
+        for ed in education_raw:
+            if isinstance(ed, dict):
+                education.append(
+                    Education(
+                        degree=str(ed.get("degree") or ""),
+                        university=str(ed.get("university") or ""),
+                        year=str(ed.get("year") or ""),
+                    )
+                )
+
+        skills_raw = data.get("skills") or []
+        skills: List[SkillEvidence] = []
+        seen_skills = set()
+        for s in skills_raw:
+            if not isinstance(s, dict):
+                continue
+            s_name = str(s.get("skill_name") or s.get("name") or "").strip()
+            if not s_name:
+                continue
+            norm_name = s_name.lower()
+            if norm_name in seen_skills:
+                continue
+            seen_skills.add(norm_name)
+
+            cat_code = str(s.get("category_code") or "").upper().strip()
+            if not is_valid_category(cat_code):
+                cat_code = CATEGORY_MAP.get(norm_name, "OTHER")
+
+            try:
+                lvl = int(s.get("level", 6))
+                lvl = max(1, min(10, lvl))
+            except (ValueError, TypeError):
+                lvl = 6
+
+            # Per audit, inferred resume skills must not claim unconfirmed high confidence
+            raw_conf = str(s.get("confidence", "medium")).lower()
+            conf = "low" if raw_conf == "low" else "medium"
+
+            skills.append(
+                SkillEvidence(
+                    skill_name=s_name,
+                    category_code=cat_code,
+                    evidence=str(s.get("evidence") or f"Extracted from resume")[:150],
+                    confidence=conf,
+                    level=lvl,
+                    inferred=True,
+                    confirmed_by_candidate=False,
+                    review_status="pending_confirmation",
+                )
+            )
+
+        projects_raw = data.get("projects") or []
+        projects: List[Project] = []
+        for pr in projects_raw:
+            if isinstance(pr, dict):
+                projects.append(
+                    Project(
+                        title=str(pr.get("title") or "Project"),
+                        description=str(pr.get("description") or ""),
+                    )
+                )
+            elif isinstance(pr, str) and pr.strip():
+                projects.append(Project(title=pr.strip()[:40], description=pr.strip()))
+
+        internships = [str(i) for i in (data.get("internships") or data.get("experience") or []) if i]
+        hackathons = [str(h) for h in (data.get("hackathons") or []) if h]
+        certifications = [str(c) for c in (data.get("certifications") or []) if c]
+        preferred_roles = [str(r) for r in (data.get("preferred_roles") or ["Software Engineer"]) if r]
+
+        if not skills:
+            return None
+
+        return CandidateProfile(
+            name=name,
+            email=email,
+            education=education or _extract_education(""),
+            skills=skills,
+            projects=projects,
+            experience=internships,
+            internships=internships,
+            hackathons=hackathons,
+            certifications=certifications,
+            preferred_roles=preferred_roles or ["Software Engineer"],
+        )
+    except Exception as exc:
+        logger.warning("LLM resume extraction failed or timed out; falling back to regex: %s", exc)
+        return None
+
+
+def _parse_resume_regex(text: str, filename: Optional[str] = None) -> CandidateProfile:
+    """Deterministic regex heuristic fallback for resume parsing."""
     cleaned = _clean_text(text)
     lines = [l.strip() for l in cleaned.split("\n") if l.strip()]
 
@@ -286,11 +461,15 @@ def parse_resume_to_structured_profile(text: str, filename: Optional[str] = None
 
     education = _extract_education(sections.get("education", ""))
     projects = _extract_projects(sections.get("projects", ""))
-    skills = _extract_skills(sections.get("skills", ""), cleaned)
+    skills = _extract_skills_regex(sections.get("skills", ""), cleaned)
 
     internships = []
     if "experience" in sections:
         internships = [l.strip() for l in sections["experience"].split("\n") if l.strip()]
+
+    hackathons = []
+    if "hackathons" in sections:
+        hackathons = [l.strip() for l in sections["hackathons"].split("\n") if l.strip()]
 
     certifications = []
     if "certifications" in sections:
@@ -312,7 +491,25 @@ def parse_resume_to_structured_profile(text: str, filename: Optional[str] = None
         education=education,
         skills=skills,
         projects=projects,
+        experience=internships,
         internships=internships,
+        hackathons=hackathons,
         certifications=certifications,
         preferred_roles=preferred_roles,
     )
+
+
+def parse_resume_to_structured_profile(text: str, filename: Optional[str] = None) -> CandidateProfile:
+    """Parse raw resume text into a CandidateProfile with reviewable inferred skills.
+
+    Attempts Groq LLM extraction first (mirroring JD Analytics), and falls back
+    to deterministic regex heuristics if the LLM is unconfigured, offline, or errors.
+    """
+    # Allow tests to force regex-only via env
+    force_regex = os.getenv("RADIX_RESUME_FORCE_REGEX", "false").lower() in {"1", "true", "yes"}
+    if not force_regex and os.getenv("GROQ_API_KEY"):
+        llm_profile = parse_resume_with_llm(text)
+        if llm_profile:
+            return llm_profile
+
+    return _parse_resume_regex(text, filename)

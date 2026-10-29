@@ -14,14 +14,18 @@ def save_profile(profile: CandidateProfile, profile_id: Optional[str] = None) ->
         raise LookupError("Profile ID was not found; reload the profile before saving")
     response = table.insert({"profile_data": dump}).execute()
     if response.data:
-<<<<<<< HEAD
         return str(response.data[0]["id"])
     raise RuntimeError("Failed to save profile to database")
 
 
 def get_profile_by_id(profile_id: str) -> Optional[Dict[str, Any]]:
     """Retrieve profile data by profile ID from Supabase."""
-    response = supabase.table("profiles").select("id, profile_data, created_at").eq("id", profile_id).execute()
+    response = (
+        supabase.table("profiles")
+        .select("id, profile_data, created_at")
+        .eq("id", profile_id)
+        .execute()
+    )
 
     if response.data:
         data = response.data[0].get("profile_data") or {}
@@ -49,7 +53,7 @@ def get_latest_profile() -> Optional[Dict[str, Any]]:
     return None
 
 
-def list_profiles(limit: int = 10) -> List[Dict[str, Any]]:
+def list_profiles(limit: int = 100) -> List[Dict[str, Any]]:
     """Retrieve recent profiles from Supabase."""
     try:
         response = (
@@ -59,48 +63,30 @@ def list_profiles(limit: int = 10) -> List[Dict[str, Any]]:
             .limit(limit)
             .execute()
         )
-        results = []
-        for item in response.data or []:
-            prof = item.get("profile_data") or {}
-            prof["id"] = item.get("id")
-            results.append(prof)
-        return results
+        profiles = []
+        for row in response.data or []:
+            profile_data = row.get("profile_data") or {}
+            profile_id = str(row.get("id"))
+            profiles.append(
+                {
+                    "id": profile_id,
+                    "name": profile_data.get("name") or "Unnamed candidate",
+                    "skills": profile_data.get("skills") or [],
+                }
+            )
+        return profiles
     except Exception:
         return []
-=======
-        return response.data[0]["profile_data"]
-    return None
-
-
-def list_profiles(limit: int = 100) -> list[dict]:
-    response = (
-        supabase.table("profiles")
-        .select("id, profile_data")
-        .limit(limit)
-        .execute()
-    )
-    profiles = []
-    for row in response.data or []:
-        profile_data = row.get("profile_data")
-        profile_id = row.get("id")
-        if not isinstance(profile_id, str) or not isinstance(profile_data, dict):
-            raise RuntimeError("Supabase returned an invalid profile record")
-        profiles.append(
-            {
-                "id": profile_id,
-                "name": profile_data.get("name") or "Unnamed candidate",
-            }
-        )
-    return profiles
 
 
 def update_profile(profile_id: str, profile: CandidateProfile) -> bool:
+    """Update profile data by profile ID in Supabase."""
+    dump = profile.model_dump(exclude={"id"})
     response = (
         supabase.table("profiles")
-        .update({"profile_data": profile.model_dump()})
+        .update({"profile_data": dump})
         .eq("id", profile_id)
         .select("id")
         .execute()
     )
     return bool(response.data)
->>>>>>> 8cf6984 (api link)

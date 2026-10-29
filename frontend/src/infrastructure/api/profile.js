@@ -31,17 +31,26 @@ export function toProfilePayload(profile) {
       : [];
 
   return {
+    id: profile.backendProfileId || profile.id || undefined,
     name: profile.name || "",
     email: profile.email || "",
+    role: profile.role || "",
     education,
     skills: profile.skills || [],
     projects: profile.projects || [],
     internships: (profile.experience || []).map((entry) =>
-      [entry.title, entry.description].filter(Boolean).join(" - "),
+      typeof entry === "string"
+        ? entry
+        : [entry.title, entry.description].filter(Boolean).join(" - "),
     ),
+    experience: profile.experience || [],
+    hackathons: profile.hackathons || [],
     certifications: (profile.certifications || []).map((entry) =>
-      typeof entry === "string" ? entry : entry.title,
+      typeof entry === "string" ? entry : entry.title || JSON.stringify(entry),
     ),
-    preferred_roles: profile.role ? [profile.role] : [],
+    preferred_roles: profile.role
+      ? [profile.role]
+      : profile.preferred_roles || ["Software Engineer"],
+    cv_file: profile.cv_file || null,
   };
 }

@@ -12,12 +12,15 @@ export function createDefaultProfile(user = null, savedProfile = null) {
     analyzedJob: savedProfile?.analyzedJob || "",
     projects: savedProfile?.projects || [],
     experience: savedProfile?.experience || [],
+    hackathons: savedProfile?.hackathons || [],
     certifications: savedProfile?.certifications || [],
+    cv_file: savedProfile?.cv_file || null,
   };
 }
 
 export const PROFILE_ENTRY_SECTIONS = [
   "projects",
   "experience",
+  "hackathons",
   "certifications",
 ];

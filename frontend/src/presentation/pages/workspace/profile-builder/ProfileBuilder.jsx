@@ -3,13 +3,17 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  Award,
   BriefcaseBusiness,
   Check,
   CheckCircle2,
   Database,
+  FileText,
+  FileUp,
   Lightbulb,
   Plus,
   Sparkles,
+  Trophy,
   Users,
   X,
 } from "lucide-react";
@@ -17,15 +21,12 @@ import {
   addProfileEntry,
   updateProfile,
 } from "../../../../application/store/appSlice";
-<<<<<<< HEAD
-import { saveProfileToApi } from "../../../../infrastructure/api/profileApi";
-=======
 import {
   createProfile,
   toProfilePayload,
   updateProfile as updateProfileApi,
 } from "../../../../infrastructure/api/profile";
->>>>>>> 8cf6984 (api link)
+import { apiRequest } from "../../../../infrastructure/api/apiClient";
 import { PageHeading } from "../../../components/shared/PagePrimitives";
 
 const profileTabs = [
@@ -33,7 +34,9 @@ const profileTabs = [
   "Skills",
   "Projects",
   "Experience",
-  "More",
+  "Hackathons",
+  "Certifications",
+  "CV Upload",
 ];
 
 export function ProfileBuilder() {
@@ -43,121 +46,72 @@ export function ProfileBuilder() {
   const [skillInput, setSkillInput] = useState("");
   const [entryTitle, setEntryTitle] = useState("");
   const [entryDescription, setEntryDescription] = useState("");
-<<<<<<< HEAD
-  const [isSaving, setIsSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
+
+  // CV Upload state
+  const [cvFile, setCvFile] = useState(null);
+  const [cvParsing, setCvParsing] = useState(false);
+  const [cvMessage, setCvMessage] = useState(null);
 
   async function submit(event) {
     event.preventDefault();
-    setIsSaving(true);
+    let updatedProfile = { ...profile };
+
+    if (tab === "Personal info") {
+      const form =
+        event.currentTarget instanceof HTMLFormElement
+          ? event.currentTarget
+          : event.currentTarget.closest("form");
+      const data = form ? new FormData(form) : null;
+      if (data) {
+        updatedProfile.name = data.get("name") ?? profile.name ?? "";
+        updatedProfile.email = data.get("email") ?? profile.email ?? "";
+        updatedProfile.education =
+          data.get("education") ?? profile.education ?? "";
+        updatedProfile.university =
+          data.get("university") ?? profile.university ?? "";
+        updatedProfile.year = data.get("year") ?? profile.year ?? "";
+        updatedProfile.role = data.get("role") ?? profile.role ?? "";
+        dispatch(updateProfile(updatedProfile));
+      }
+    }
+
+    setSaving(true);
     setSaveResult(null);
 
-    const form =
-      event.currentTarget instanceof HTMLFormElement
-        ? event.currentTarget
-        : event.currentTarget.closest("form");
-    const data = form ? new FormData(form) : null;
-
-    const name = data?.get("name") ?? profile.name ?? "";
-    const email = data?.get("email") ?? profile.email ?? "";
-    const education = data?.get("education") ?? profile.education ?? "";
-    const university = data?.get("university") ?? profile.university ?? "";
-    const year = data?.get("year") ?? profile.year ?? "";
-    const role = data?.get("role") ?? profile.role ?? "";
-
-    const localUpdates = {
-      name,
-      email,
-      education,
-      university,
-      year,
-      role,
-    };
-    dispatch(updateProfile(localUpdates));
-
-    const payload = {
-      id: profile.profileId || profile.id || undefined,
-      name,
-      email,
-      role,
-      education: [
-        {
-          degree: education,
-          university,
-          year,
-        },
-      ],
-      skills: profile.skills || [],
-      projects: profile.projects || [],
-      experience: profile.experience || [],
-      internships: profile.internships || profile.experience || [],
-      certifications: (profile.certifications || []).map((c) =>
-        typeof c === "object" ? c.title || JSON.stringify(c) : c,
-      ),
-      preferred_roles: role
-        ? [role]
-        : profile.preferred_roles || ["Software Engineer"],
-    };
-
     try {
-      const res = await saveProfileToApi(payload);
-      const savedId = res?.id || profile.id || "saved-profile";
-      dispatch(updateProfile({ id: savedId, profileId: savedId }));
+      const payload = toProfilePayload(updatedProfile);
+      const existingId =
+        updatedProfile.backendProfileId ||
+        updatedProfile.profileId ||
+        updatedProfile.id;
+      const response = existingId
+        ? await updateProfileApi(existingId, payload)
+        : await createProfile(payload);
+
+      const savedId = response?.id || existingId || "saved-profile";
+      dispatch(
+        updateProfile({
+          id: savedId,
+          profileId: savedId,
+          backendProfileId: savedId,
+        }),
+      );
       localStorage.setItem("radix-saved-profile-id", savedId);
       setSaveResult({
         success: true,
         id: savedId,
-        message: `Saved to database (ID: ${savedId.slice(0, 8)}...)`,
+        message: `Saved to backend database (ID: ${savedId.slice(0, 8)}...)`,
       });
-    } catch (err) {
+      window.setTimeout(() => setSaveResult(null), 4000);
+    } catch (requestError) {
       setSaveResult({
         success: false,
-        message: `Saved locally (DB: ${err.message})`,
+        message: requestError.message,
       });
     } finally {
-      setIsSaving(false);
-      window.setTimeout(() => setSaveResult(null), 5000);
-=======
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
-
-  async function submit(event) {
-    event.preventDefault();
-    let updatedProfile = profile;
-    if (tab !== "Personal info") {
-      updatedProfile = profile;
-    } else {
-      const data = new FormData(event.currentTarget);
-      updatedProfile = {
-        ...profile,
-        name: data.get("name"),
-        email: data.get("email"),
-        education: data.get("education"),
-        university: data.get("university"),
-        year: data.get("year"),
-        role: data.get("role"),
-      };
-      dispatch(updateProfile(updatedProfile));
-    }
-
-    setSaving(true);
-    setSaveError("");
-    try {
-      const payload = toProfilePayload(updatedProfile);
-      const response = updatedProfile.backendProfileId
-        ? await updateProfileApi(updatedProfile.backendProfileId, payload)
-        : await createProfile(payload);
-      if (!updatedProfile.backendProfileId) {
-        dispatch(updateProfile({ backendProfileId: response.id }));
-      }
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2500);
-    } catch (requestError) {
-      setSaveError(requestError.message);
-    } finally {
       setSaving(false);
->>>>>>> 8cf6984 (api link)
     }
   }
 
@@ -165,12 +119,12 @@ export function ProfileBuilder() {
     event.preventDefault();
     const title = entryTitle.trim();
     if (!title) return;
-    const section =
-      tab === "Projects"
-        ? "projects"
-        : tab === "Experience"
-          ? "experience"
-          : "certifications";
+
+    let section = "certifications";
+    if (tab === "Projects") section = "projects";
+    else if (tab === "Experience") section = "experience";
+    else if (tab === "Hackathons") section = "hackathons";
+
     dispatch(
       addProfileEntry({
         section,
@@ -179,10 +133,7 @@ export function ProfileBuilder() {
     );
     setEntryTitle("");
     setEntryDescription("");
-<<<<<<< HEAD
-=======
-    setSaved(false);
->>>>>>> 8cf6984 (api link)
+    setSaveResult(null);
   }
 
   function addSkill(event) {
@@ -190,7 +141,7 @@ export function ProfileBuilder() {
     const skill = skillInput.trim();
     if (
       !skill ||
-      profile.skills.some((item) => {
+      (profile.skills || []).some((item) => {
         const name = typeof item === "object" ? item.skill_name : item;
         return name.toLowerCase() === skill.toLowerCase();
       })
@@ -208,9 +159,11 @@ export function ProfileBuilder() {
       review_status: "confirmed",
     };
 
-    dispatch(updateProfile({ skills: [...profile.skills, newSkillObj] }));
+    dispatch(
+      updateProfile({ skills: [...(profile.skills || []), newSkillObj] }),
+    );
     setSkillInput("");
-    setSaved(false);
+    setSaveResult(null);
   }
 
   function removeSkill(skillToRemove) {
@@ -220,17 +173,17 @@ export function ProfileBuilder() {
         : skillToRemove;
     dispatch(
       updateProfile({
-        skills: profile.skills.filter((item) => {
+        skills: (profile.skills || []).filter((item) => {
           const name = typeof item === "object" ? item.skill_name : item;
           return name !== targetName;
         }),
       }),
     );
-    setSaved(false);
+    setSaveResult(null);
   }
 
   function updateSkillLevel(index, newLevel) {
-    const updated = [...profile.skills];
+    const updated = [...(profile.skills || [])];
     const item = updated[index];
     if (typeof item === "object") {
       updated[index] = {
@@ -256,7 +209,7 @@ export function ProfileBuilder() {
   }
 
   function confirmSkill(index) {
-    const updated = [...profile.skills];
+    const updated = [...(profile.skills || [])];
     const item = updated[index];
     if (typeof item === "object") {
       updated[index] = {
@@ -269,6 +222,64 @@ export function ProfileBuilder() {
     }
   }
 
+  async function handleCvExtract() {
+    if (!cvFile) return;
+    setCvParsing(true);
+    setCvMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", cvFile);
+      const response = await apiRequest("/resume/parse", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response?.profile) {
+        const p = response.profile;
+        const edu =
+          Array.isArray(p.education) && p.education[0] ? p.education[0] : {};
+        dispatch(
+          updateProfile({
+            name: p.name || profile.name || "",
+            email: p.email || profile.email || "",
+            education: edu.degree || profile.education || "",
+            university: edu.university || profile.university || "",
+            year: edu.year || profile.year || "",
+            skills: p.skills || profile.skills || [],
+            role:
+              (p.preferred_roles && p.preferred_roles[0]) || profile.role || "",
+            projects: p.projects || profile.projects || [],
+            experience: p.internships || profile.experience || [],
+            hackathons: p.hackathons || profile.hackathons || [],
+            certifications: p.certifications || profile.certifications || [],
+            preferred_roles: p.preferred_roles || profile.preferred_roles || [],
+            cv_file: response.filename || cvFile.name,
+          }),
+        );
+        setCvMessage({
+          success: true,
+          text: `Extracted ${p.skills?.length || 0} skills and filled profile from ${response.filename || cvFile.name}!`,
+        });
+      }
+    } catch (err) {
+      setCvMessage({
+        success: false,
+        text: `CV extraction error: ${err.message}`,
+      });
+    } finally {
+      setCvParsing(false);
+    }
+  }
+
+  const currentEntries =
+    tab === "Projects"
+      ? profile.projects || []
+      : tab === "Experience"
+        ? profile.experience || []
+        : tab === "Hackathons"
+          ? profile.hackathons || []
+          : profile.certifications || [];
+
   return (
     <div className="page">
       <PageHeading
@@ -279,10 +290,17 @@ export function ProfileBuilder() {
           <div className="completion-chip">
             <div>
               <span>PROFILE DATABASE STATUS</span>
-              <b>{profile.id ? "SYNCED" : "LOCAL"}</b>
+              <b>
+                {profile.backendProfileId || profile.id ? "SYNCED" : "LOCAL"}
+              </b>
             </div>
             <div className="mini-progress">
-              <i style={{ width: profile.id ? "100%" : "60%" }} />
+              <i
+                style={{
+                  width:
+                    profile.backendProfileId || profile.id ? "100%" : "60%",
+                }}
+              />
             </div>
           </div>
         }
@@ -295,10 +313,33 @@ export function ProfileBuilder() {
                 key={item}
                 className={tab === item ? "active" : ""}
                 onClick={() => setTab(item)}
+                type="button"
               >
                 {item}
                 {item === "Skills" && (
-                  <span className="tab-count">{profile.skills.length}</span>
+                  <span className="tab-count">
+                    {(profile.skills || []).length}
+                  </span>
+                )}
+                {item === "Projects" && (
+                  <span className="tab-count">
+                    {(profile.projects || []).length}
+                  </span>
+                )}
+                {item === "Experience" && (
+                  <span className="tab-count">
+                    {(profile.experience || []).length}
+                  </span>
+                )}
+                {item === "Hackathons" && (
+                  <span className="tab-count">
+                    {(profile.hackathons || []).length}
+                  </span>
+                )}
+                {item === "Certifications" && (
+                  <span className="tab-count">
+                    {(profile.certifications || []).length}
+                  </span>
                 )}
               </button>
             ))}
@@ -315,14 +356,20 @@ export function ProfileBuilder() {
                         ? "Projects you're proud of"
                         : tab === "Experience"
                           ? "Where you've made an impact"
-                          : "A few more details"}
+                          : tab === "Hackathons"
+                            ? "Hackathons & Competitions"
+                            : tab === "Certifications"
+                              ? "Certifications & Credentials"
+                              : "Upload Candidate CV"}
                 </h2>
                 <p>
                   {tab === "Personal info"
                     ? "A few details help us make your profile feel like you."
                     : tab === "Skills"
                       ? "Review and confirm proficiency levels (0-10) for accurate Talent Check evaluation."
-                      : "This is your space. Add details that help tell your story."}
+                      : tab === "CV Upload"
+                        ? "Attach a CV file to auto-populate your entire profile via Resume Parsing."
+                        : "This is your space. Add details that help tell your story."}
                 </p>
               </div>
               <span className="required-note">* Required</span>
@@ -382,11 +429,11 @@ export function ProfileBuilder() {
                   proficiency levels (1–10) below.
                 </div>
                 <p className="field-label">
-                  Your skills ({profile.skills.length})
+                  Your skills ({(profile.skills || []).length})
                   <span>Skills help us calculate accurate role matches.</span>
                 </p>
                 <div className="editable-tags">
-                  {profile.skills.map((skill, index) => {
+                  {(profile.skills || []).map((skill, index) => {
                     const name =
                       typeof skill === "object" ? skill.skill_name : skill;
                     const cat =
@@ -499,72 +546,43 @@ export function ProfileBuilder() {
                         )}
                         <button
                           type="button"
-                          aria-label={`Remove ${name}`}
                           onClick={() => removeSkill(skill)}
+                          aria-label={`Remove ${name}`}
                         >
-                          <X size={13} />
+                          <X size={12} />
                         </button>
                       </span>
                     );
                   })}
                 </div>
-                <div className="add-skill-form">
+                <div className="add-skill-bar">
                   <input
                     value={skillInput}
                     onChange={(event) => setSkillInput(event.target.value)}
+                    placeholder="Type a skill and press Add"
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") addSkill(event);
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addSkill(event);
+                      }
                     }}
-                    placeholder="Add a skill, e.g. TypeScript"
                   />
                   <button
-                    className="button button-outline"
                     type="button"
+                    className="button button-outline"
                     onClick={addSkill}
                   >
-                    <Plus size={15} /> Add skill
+                    <Plus size={15} /> Add
                   </button>
-                </div>
-                <div className="suggested-skills">
-                  <span>Popular for your role</span>
-                  {["TypeScript", "AWS", "Communication"]
-                    .filter(
-                      (item) =>
-                        !profile.skills.some((s) => {
-                          const n = typeof s === "object" ? s.skill_name : s;
-                          return n.toLowerCase() === item.toLowerCase();
-                        }),
-                    )
-                    .map((skill) => (
-                      <button
-                        type="button"
-                        key={skill}
-                        onClick={() =>
-                          dispatch(
-                            updateProfile({
-                              skills: [
-                                ...profile.skills,
-                                {
-                                  skill_name: skill,
-                                  category_code: "OTHER",
-                                  level: 6,
-                                  evidence: "Added from popular suggestions",
-                                  confidence: "medium",
-                                  inferred: false,
-                                  confirmed_by_candidate: true,
-                                },
-                              ],
-                            }),
-                          )
-                        }
-                      >
-                        + {skill}
-                      </button>
-                    ))}
                 </div>
               </div>
             )}
-            {!["Personal info", "Skills"].includes(tab) && (
+            {[
+              "Projects",
+              "Experience",
+              "Hackathons",
+              "Certifications",
+            ].includes(tab) && (
               <div className="entry-editor">
                 <div className="form-grid">
                   <label className="field-label">
@@ -572,27 +590,31 @@ export function ProfileBuilder() {
                       ? "Project name"
                       : tab === "Experience"
                         ? "Role or organization"
-                        : "Certification name"}
+                        : tab === "Hackathons"
+                          ? "Hackathon or contest name"
+                          : "Certification name"}
                     <input
                       value={entryTitle}
                       onChange={(event) => setEntryTitle(event.target.value)}
                       placeholder={
                         tab === "Projects"
-                          ? "e.g. Campus event planner"
+                          ? "e.g. Distributed Job Scheduler"
                           : tab === "Experience"
-                            ? "e.g. Frontend intern"
-                            : "e.g. AWS Cloud Practitioner"
+                            ? "e.g. Software Engineering Intern"
+                            : tab === "Hackathons"
+                              ? "e.g. Smart India Hackathon Winner"
+                              : "e.g. AWS Certified Solutions Architect"
                       }
                     />
                   </label>
                   <label className="field-label">
-                    A few details
+                    Details & Impact
                     <input
                       value={entryDescription}
                       onChange={(event) =>
                         setEntryDescription(event.target.value)
                       }
-                      placeholder="What did you work on or learn?"
+                      placeholder="What did you build, achieve, or learn?"
                     />
                   </label>
                 </div>
@@ -602,38 +624,141 @@ export function ProfileBuilder() {
                   onClick={addEntry}
                 >
                   <Plus size={15} /> Add{" "}
-                  {tab === "More" ? "certification" : tab.toLowerCase()}
+                  {tab === "Hackathons"
+                    ? "hackathon"
+                    : tab === "Certifications"
+                      ? "certification"
+                      : tab.toLowerCase()}
                 </button>
                 <div className="profile-entry-list">
-                  {(tab === "Projects"
-                    ? profile.projects
-                    : tab === "Experience"
-                      ? profile.experience
-                      : profile.certifications
-                  ).map((entry, index) => (
-                    <div key={`${entry.title}-${index}`}>
-                      <span className="entry-icon">
-                        <BriefcaseBusiness size={15} />
-                      </span>
-                      <div>
-                        <b>{entry.title}</b>
-                        <small>
-                          {entry.description || "Added to your profile"}
-                        </small>
+                  {currentEntries.map((entry, index) => {
+                    const title =
+                      typeof entry === "object" ? entry.title : entry;
+                    const desc =
+                      typeof entry === "object" ? entry.description : "";
+                    return (
+                      <div key={`${title}-${index}`}>
+                        <span className="entry-icon">
+                          {tab === "Hackathons" ? (
+                            <Trophy size={15} />
+                          ) : tab === "Certifications" ? (
+                            <Award size={15} />
+                          ) : (
+                            <BriefcaseBusiness size={15} />
+                          )}
+                        </span>
+                        <div>
+                          <b>{title}</b>
+                          <small>{desc || "Added to your profile"}</small>
+                        </div>
+                        <CheckCircle2 size={15} />
                       </div>
-                      <CheckCircle2 size={15} />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+              </div>
+            )}
+            {tab === "CV Upload" && (
+              <div
+                className="cv-upload-tab"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                  padding: "10px 0",
+                }}
+              >
+                <div
+                  style={{
+                    border: "2px dashed #cbd5e1",
+                    borderRadius: "10px",
+                    padding: "24px",
+                    textAlign: "center",
+                    background: "#f8fafc",
+                  }}
+                >
+                  <FileUp
+                    size={32}
+                    style={{ margin: "0 auto 10px", color: "#6841cf" }}
+                  />
+                  <p style={{ fontWeight: 600, marginBottom: "6px" }}>
+                    Select CV / Resume (PDF or DOCX)
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginBottom: "14px",
+                    }}
+                  >
+                    Extracts structured skills, experience, and education to
+                    pre-fill this form automatically.
+                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+                    style={{ fontSize: "13px" }}
+                  />
+                  {cvFile && (
+                    <div style={{ marginTop: "14px" }}>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={handleCvExtract}
+                        disabled={cvParsing}
+                      >
+                        <Sparkles size={15} />{" "}
+                        {cvParsing
+                          ? "Extracting..."
+                          : "Extract & Pre-fill Profile"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {cvMessage && (
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      background: cvMessage.success ? "#dcfce7" : "#fee2e2",
+                      color: cvMessage.success ? "#14532d" : "#991b1b",
+                    }}
+                  >
+                    {cvMessage.success ? "✓ " : "⚠️ "} {cvMessage.text}
+                  </div>
+                )}
+                {profile.cv_file && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "13px",
+                      color: "#475569",
+                    }}
+                  >
+                    <FileText size={16} color="#6841cf" />
+                    <span>
+                      Attached CV file: <b>{profile.cv_file}</b>
+                    </span>
+                  </div>
+                )}
               </div>
             )}
             <div className="profile-form-footer">
               <span>
-<<<<<<< HEAD
-                {isSaving ? (
+                {saving ? (
                   <span
                     className="saving-message"
-                    style={{ color: "#6841cf", fontWeight: "500" }}
+                    style={{
+                      color: "#6841cf",
+                      fontWeight: "500",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
                   >
                     <Database size={15} /> Saving profile to database...
                   </span>
@@ -652,24 +777,19 @@ export function ProfileBuilder() {
                   </span>
                 ) : saveResult && !saveResult.success ? (
                   <span
-                    className="error-message"
+                    className="form-error"
+                    role="alert"
                     style={{ color: "#dc2626", fontSize: "13px" }}
                   >
-                    ⚠️ {saveResult.message}
+                    ⚠️ Could not save profile: {saveResult.message}
                   </span>
-                ) : profile.id ? (
+                ) : profile.backendProfileId || profile.id ? (
                   <span style={{ color: "#64748b", fontSize: "12.5px" }}>
-                    Database ID: <b>{profile.id.slice(0, 8)}...</b> · Synced
-=======
-                {saveError && (
-                  <span className="form-error" role="alert">
-                    Could not save profile: {saveError}
-                  </span>
-                )}
-                {saved ? (
-                  <span className="saved-message">
-                    <CheckCircle2 size={15} /> Profile saved to backend
->>>>>>> 8cf6984 (api link)
+                    Database ID:{" "}
+                    <b>
+                      {(profile.backendProfileId || profile.id).slice(0, 8)}...
+                    </b>{" "}
+                    · Synced
                   </span>
                 ) : (
                   "Your profile is stored securely in the database."
@@ -678,16 +798,10 @@ export function ProfileBuilder() {
               <button
                 className="button button-primary"
                 type="submit"
-<<<<<<< HEAD
-                disabled={isSaving}
-              >
-                <Check size={16} />{" "}
-                {isSaving ? "Saving..." : "Save profile to database"}
-=======
                 disabled={saving}
               >
-                <Check size={16} /> {saving ? "Saving..." : "Save profile"}
->>>>>>> 8cf6984 (api link)
+                <Check size={16} />{" "}
+                {saving ? "Saving..." : "Save profile to database"}
               </button>
             </div>
           </form>
@@ -699,19 +813,23 @@ export function ProfileBuilder() {
                 {(profile.name || "A").charAt(0)}
               </div>
               <span className="status-badge success">
-                <i /> {profile.id ? "Synced" : "In progress"}
+                <i />{" "}
+                {profile.backendProfileId || profile.id
+                  ? "Synced"
+                  : "In progress"}
               </span>
             </div>
             <div className="profile-card-body">
-              <h3>{profile.name}</h3>
-              <p>{profile.role}</p>
+              <h3>{profile.name || "Candidate"}</h3>
+              <p>{profile.role || "Software Engineer"}</p>
               <span className="profile-location">
-                <Users size={14} /> {profile.university}
+                <Users size={14} />{" "}
+                {profile.university || "University / Institute"}
               </span>
               <div className="profile-card-divider" />
               <div className="profile-card-label">YOUR SKILLS</div>
               <div className="tag-list compact-tags">
-                {profile.skills.slice(0, 5).map((skill, i) => {
+                {(profile.skills || []).slice(0, 6).map((skill, i) => {
                   const sName =
                     typeof skill === "object" ? skill.skill_name : skill;
                   return (
@@ -720,27 +838,22 @@ export function ProfileBuilder() {
                     </span>
                   );
                 })}
-                {profile.skills.length > 5 && (
-                  <span className="skill-tag">
-                    +{profile.skills.length - 5}
-                  </span>
-                )}
               </div>
-              <Link to="/matching" className="profile-match-link">
-                Preview job matches <ArrowRight size={14} />
-              </Link>
-            </div>
-          </section>
-          <section className="panel profile-tip">
-            <span className="soft-icon orange">
-              <Lightbulb size={18} />
-            </span>
-            <div>
-              <b>Make your skills work for you</b>
-              <p>
-                Confirm your estimated skill levels to get precise match ratings
-                and gap calculations.
-              </p>
+              {profile.cv_file && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    fontSize: "12px",
+                    color: "#64748b",
+                  }}
+                >
+                  <FileText
+                    size={13}
+                    style={{ verticalAlign: "middle", marginRight: "4px" }}
+                  />
+                  {profile.cv_file}
+                </div>
+              )}
             </div>
           </section>
         </aside>

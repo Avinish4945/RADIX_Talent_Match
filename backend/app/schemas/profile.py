@@ -28,12 +28,14 @@ class CandidateProfile(BaseModel):
     email: str = ""
     role: Optional[str] = ""
     education: List[Union[Education, dict, str]] = Field(default_factory=list)
-    skills: List[Union[str, SkillEvidence]] = Field(default_factory=list)
-    projects: List[Union[Project, dict]] = Field(default_factory=list)
+    skills: List[Union[str, SkillEvidence, dict]] = Field(default_factory=list)
+    projects: List[Union[Project, dict, str]] = Field(default_factory=list)
     experience: List[Union[dict, str]] = Field(default_factory=list)
     internships: List[Union[dict, str]] = Field(default_factory=list)
+    hackathons: List[Union[dict, str]] = Field(default_factory=list)
     certifications: List[Union[dict, str]] = Field(default_factory=list)
     preferred_roles: List[str] = Field(default_factory=list)
+    cv_file: Optional[str] = None
 
     @field_validator("education", mode="before")
     @classmethod
@@ -49,11 +51,11 @@ class CandidateProfile(BaseModel):
     @classmethod
     def normalize_projects(cls, v: Any) -> Any:
         if isinstance(v, list):
-            res = []
+            normalized = []
             for item in v:
                 if isinstance(item, str):
-                    res.append({"title": item, "description": ""})
+                    normalized.append({"title": item, "description": ""})
                 else:
-                    res.append(item)
-            return res
+                    normalized.append(item)
+            return normalized
         return v or []

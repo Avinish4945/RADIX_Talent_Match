@@ -67,18 +67,8 @@ def test_get_profile_returns_404_when_profile_is_missing(monkeypatch):
     assert response.json() == {"detail": "Profile not found"}
 
 
-<<<<<<< HEAD
 def test_create_profile_with_existing_id_updates(monkeypatch):
     observed = {}
-=======
-<<<<<<< HEAD
-def test_get_latest_profile_returns_saved_profile(monkeypatch):
-    monkeypatch.setattr(
-        profile_routes.profile_service,
-        "get_latest_profile",
-        lambda: {"id": "latest-123", "name": "Latest User", "skills": ["Python"]},
-    )
->>>>>>> aeafd8b (api link)
 
     def fake_save(profile, profile_id=None):
         observed["profile_id"] = profile_id
@@ -108,11 +98,9 @@ def test_create_profile_with_stale_id_returns_404(monkeypatch):
     )
 
     assert response.status_code == 404
-<<<<<<< HEAD
     assert "Profile ID was not found" in response.json()["detail"]
-=======
-    assert response.json() == {"detail": "No profile found"}
-=======
+
+
 def test_update_profile_returns_success(monkeypatch):
     observed = {}
 
@@ -173,5 +161,3 @@ def test_update_profile_does_not_expose_internal_errors(monkeypatch):
 
     assert response.status_code == 500
     assert "database credentials leaked" not in response.text
->>>>>>> 8cf6984 (api link)
->>>>>>> aeafd8b (api link)
