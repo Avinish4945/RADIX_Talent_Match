@@ -1,5 +1,10 @@
 import logging
+<<<<<<< HEAD
 from typing import Any, Dict
+=======
+from typing import Any
+
+>>>>>>> f47fe0f (fix)
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.profile import CandidateProfile
@@ -14,8 +19,8 @@ def create_profile(profile: CandidateProfile) -> dict[str, str]:
     try:
         profile_id = profile_service.save_profile(profile, profile_id=profile.id)
         return {"id": profile_id, "message": "Profile saved successfully"}
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from None
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from None
     except Exception:
         logger.exception("Failed to save profile")
         raise HTTPException(
@@ -24,8 +29,13 @@ def create_profile(profile: CandidateProfile) -> dict[str, str]:
         ) from None
 
 
+@router.get("/api/profiles")
+def list_profiles(limit: int = 100) -> dict[str, list[dict[str, Any]]]:
+    return {"profiles": profile_service.list_profiles(limit=limit)}
+
+
 @router.get("/api/profiles/{profile_id}")
-def get_profile(profile_id: str) -> Dict[str, Any]:
+def get_profile(profile_id: str) -> dict[str, Any]:
     profile = profile_service.get_profile_by_id(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -36,8 +46,13 @@ def get_profile(profile_id: str) -> Dict[str, Any]:
 def update_profile(profile_id: str, profile: CandidateProfile) -> dict[str, str]:
     try:
         updated = profile_service.update_profile(profile_id, profile)
+<<<<<<< HEAD
     except Exception as exc:
         logger.exception("Failed to update profile")
+=======
+    except Exception:
+        logger.exception("Failed to update profile %s", profile_id)
+>>>>>>> f47fe0f (fix)
         raise HTTPException(
             status_code=500,
             detail="Failed to update profile. An internal error occurred.",
@@ -45,5 +60,4 @@ def update_profile(profile_id: str, profile: CandidateProfile) -> dict[str, str]
 
     if not updated:
         raise HTTPException(status_code=404, detail="Profile not found")
-
     return {"id": profile_id, "message": "Profile updated successfully"}

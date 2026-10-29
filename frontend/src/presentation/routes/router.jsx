@@ -16,17 +16,17 @@ export function createAppRouter({ isAuthenticated }) {
 
   return createBrowserRouter(
     [
-      {
-        path: "/login",
-        element: <AuthPage />,
-      },
-      {
-        path: "/signup",
-        element: <AuthPage initialMode="signup" />,
-      },
+      // {
+      //   path: "/login",
+      //   element: <AuthPage />,
+      // },
+      // {
+      //   path: "/signup",
+      //   element: <AuthPage initialMode="signup" />,
+      // },
       {
         path: "/",
-        loader: requireAuth,
+        
         element: <AppShell />,
         children: [
           { index: true, loader: () => redirect("/dashboard") },

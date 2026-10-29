@@ -224,7 +224,7 @@ export function SkillMatching() {
   const hasProfileSkills = candidateSkills.length > 0;
 
   return (
-    <div className="page">
+    <div className="page skill-matching-page">
       <PageHeading
         eyebrow="YOUR SKILLS, THE RIGHT ROLE"
         title="Skill Matching"
@@ -294,6 +294,7 @@ export function SkillMatching() {
               value={selectedJobId}
               onChange={(event) => selectJob(event.target.value)}
               disabled={jobsLoading || jobDescriptions.length === 0}
+              aria-label="Select saved job description"
             >
               <option value="">
                 {jobsLoading ? "Loading saved jobs..." : "Choose a saved JD"}
@@ -431,9 +432,18 @@ export function SkillMatching() {
             </div>
           </div>
           <div className="match-result-summary">
-            <span>{result.summary.matched} matched</span>
-            <span>{result.summary.partial} partial</span>
-            <span>{result.summary.missing} not found</span>
+            <span className="match-summary-matched">
+              <CheckCircle2 size={14} />
+              {result.summary.matched} matched
+            </span>
+            <span className="match-summary-partial">
+              <Sparkles size={14} />
+              {result.summary.partial} partial
+            </span>
+            <span className="match-summary-missing">
+              <XCircle size={14} />
+              {result.summary.missing} not found
+            </span>
           </div>
           <PieChart
             title="Skill match breakdown"
