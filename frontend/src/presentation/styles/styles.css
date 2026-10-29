@@ -7881,3 +7881,296 @@ body {
     display: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   TALENT CHECK & SKILL MATCH WORKSPACE EXTENSIONS
+   -------------------------------------------------------------------------- */
+
+/* Controls Card */
+.check-controls-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.check-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) auto;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* Candidate Preview Card */
+.candidate-dossier-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.dossier-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dossier-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4f46e5 0%, #3525cd 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+}
+.dossier-meta h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin: 0 0 2px 0;
+}
+.dossier-meta span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 12 Core Competencies Grid */
+.competencies-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.competencies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.competency-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.15s ease;
+}
+.competency-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.competency-card.meets {
+  border-top: 3px solid #10b981;
+}
+.competency-card.gap {
+  border-top: 3px solid #ef4444;
+}
+.competency-card.unknown {
+  border-top: 3px solid #94a3b8;
+}
+.competency-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.competency-cat {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--surface-low);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.competency-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin: 4px 0 0 0;
+}
+.competency-levels-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  text-align: center;
+}
+.level-col {
+  display: flex;
+  flex-direction: column;
+}
+.level-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.level-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface);
+  font-variant-numeric: tabular-nums;
+}
+.delta-val.positive {
+  color: #10b981;
+}
+.delta-val.negative {
+  color: #ef4444;
+}
+.delta-val.neutral {
+  color: #64748b;
+}
+.competency-evidence {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+  background: #fcfdfe;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+/* Skill Match Vector Layout */
+.skill-match-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.match-overview-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.match-vector-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.score-hero-val {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 14px 0 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.score-hero-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.score-counts-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.score-count-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+}
+.score-count-box b {
+  font-size: 16px;
+  font-weight: 700;
+}
+.score-count-box small {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Evidence Matrix & Gaps */
+.evidence-matrix-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.evidence-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.skills-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.skill-matrix-item {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skill-matrix-item.matched {
+  border-left: 3px solid #10b981;
+}
+.skill-matrix-item.partial {
+  border-left: 3px solid #f59e0b;
+}
+.skill-matrix-item.missing {
+  border-left: 3px solid #ef4444;
+}
+.gap-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gap-step-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.gap-step-content {
+  flex: 1;
+}
+.gap-step-content h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 4px 0;
+}
+.gap-step-content p {
+  font-size: 12px;
+  color: #78350f;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}

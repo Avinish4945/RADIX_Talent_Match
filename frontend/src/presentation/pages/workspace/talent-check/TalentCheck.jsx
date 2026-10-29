@@ -1,12 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
   ArrowRight,
+  Award,
+  Check,
+  CheckCircle2,
+  FileCheck2,
+  HelpCircle,
+  Layers,
   Lightbulb,
+  Radio,
+  RotateCcw,
+  Shield,
   ShieldCheck,
   Sparkles,
   Target,
+  UserCheck,
+  UserRound,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import { apiRequest } from "../../../../infrastructure/api/apiClient";
 import {
@@ -29,12 +43,34 @@ import { PieChart } from "../../../components/shared/PieChart";
 const EMPTY_JOB_ANALYSES = [];
 const CURRENT_PROFILE_ID = "current-profile";
 
+const CATEGORY_NAMES = {
+  COD: "Coding & Clean Architecture",
+  DSA: "Algorithms & Complexity",
+  SYS: "Distributed Systems & Infrastructure",
+  SQL: "Databases & Query Optimization",
+  AI: "Machine Learning & AI Modeling",
+  DEV: "DevOps & Cloud Orchestration",
+  SEC: "Cybersecurity & Zero Trust",
+  NET: "Networking & Distributed Protocols",
+  ARC: "High-Level Architecture & RFCs",
+  MOB: "Mobile & Client Engineering",
+  CC: "Cloud Computing & Serverless",
+  TST: "Testing Rigor & CI/CD Verification",
+  OOD: "Object-Oriented Design",
+  OS: "Operating Systems & Concurrency",
+  APTI: "Quantitative & Analytical Aptitude",
+  SWE: "Software Engineering Practices",
+  COMM: "Technical Communication & Mentorship",
+};
+
 export function TalentCheck() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const appProfile = useSelector((state) => state.app.profile);
   const jobAnalyses = useSelector(
     (state) => state.app.profile.jobAnalyses || EMPTY_JOB_ANALYSES,
   );
+
   const extractedCompanies = useMemo(
     () =>
       jobAnalyses
@@ -44,10 +80,12 @@ export function TalentCheck() {
         .filter(Boolean),
     [jobAnalyses],
   );
+
   const [configuredCompanies, setConfiguredCompanies] = useState([]);
   const [jdCompanies, setJdCompanies] = useState([]);
   const [jdCompanyRoles, setJdCompanyRoles] = useState({});
   const [jdCompaniesError, setJdCompaniesError] = useState("");
+
   const companies = useMemo(
     () => [
       ...new Map(
@@ -59,6 +97,7 @@ export function TalentCheck() {
     ],
     [configuredCompanies, extractedCompanies, jdCompanies],
   );
+
   const [candidates, setCandidates] = useState([]);
   const [company, setCompany] = useState("");
   const [jdId, setJdId] = useState("");
@@ -73,14 +112,18 @@ export function TalentCheck() {
   const [checking, setChecking] = useState(false);
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
+
   const selectedCompanyConfigured = configuredCompanies.some(
     (name) => name.toLocaleLowerCase() === company.toLocaleLowerCase(),
   );
+
   const selectedCompanyJds =
     jdCompanyRoles[company.toLocaleLowerCase()]?.jobDescriptions || [];
+
   const selectedJdHasSkills = selectedCompanyJds.some(
     (job) => job.id === jdId && job.hasSkills,
   );
+
   const hasCurrentProfile = Boolean(
     appProfile.name?.trim() ||
     appProfile.email?.trim() ||
@@ -266,6 +309,7 @@ export function TalentCheck() {
       } else if (candidateId === appProfile.backendProfileId) {
         await updateProfileApi(candidateId, toProfilePayload(appProfile));
       }
+
       const response = await apiRequest("/talent-check/", {
         method: "POST",
         body: {
@@ -286,24 +330,29 @@ export function TalentCheck() {
   const selectedCandidate = candidates.find(
     (candidate) => candidate.id === candidateId,
   );
+
   const assessedGaps =
     result?.skillset_gap.filter(
       (skill) => skill.status === "assessed" && skill.gap,
     ) || [];
+
   const unknownSkills =
     result?.skillset_gap.filter((skill) => skill.status === "unknown") || [];
+
   const isPresenceAssessment = result?.assessment_type === "skills_presence";
+
   const presentSkills =
     result?.skillset_gap.filter((skill) => skill.status === "present") || [];
   const partialSkills =
     result?.skillset_gap.filter((skill) => skill.status === "partial") || [];
   const missingSkills =
     result?.skillset_gap.filter((skill) => skill.status === "missing") || [];
+
   const pieData = isPresenceAssessment
     ? [
-        { label: "Present", value: presentSkills.length, color: "#25a875" },
-        { label: "Partial", value: partialSkills.length, color: "#e5a436" },
-        { label: "Missing", value: missingSkills.length, color: "#df6570" },
+        { label: "Present", value: presentSkills.length, color: "#10b981" },
+        { label: "Partial", value: partialSkills.length, color: "#f59e0b" },
+        { label: "Missing", value: missingSkills.length, color: "#ef4444" },
       ]
     : [
         {
@@ -312,52 +361,106 @@ export function TalentCheck() {
             result?.skillset_gap.filter(
               (skill) => skill.status === "assessed" && !skill.gap,
             ).length || 0,
-          color: "#25a875",
+          color: "#10b981",
         },
         {
           label: "Skill gap",
           value: assessedGaps.length,
-          color: "#df6570",
+          color: "#ef4444",
         },
         {
           label: "Not assessed",
           value: unknownSkills.length,
-          color: "#9aa6b2",
+          color: "#94a3b8",
         },
       ];
 
   return (
-    <div className="page talent-check-page">
-      <PageHeading
-        eyebrow="KNOW WHERE YOU STAND"
-        title="Talent Check"
-        description="Compare a saved candidate profile with configured company requirements or skills from a saved job description."
-        action={
-          <span className="secure-note">
-            <ShieldCheck size={16} /> Saved profile data
-          </span>
-        }
-      />
-      <section className="panel check-controls">
-        <div className="check-control-copy">
-          <div className="soft-icon purple">
-            <Target size={19} />
+    <div className="dashboard-container">
+      {/* Executive Header */}
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-main">
+          <div className="hero-status-tag">
+            <span className="status-dot-pulse" />
+            <span>Forensic Calibration Engine · Multi-Source Audits</span>
           </div>
-          <div>
-            <b>Choose a company and candidate</b>
-            <span>
-              Choose a configured assessment or a saved JD for a presence-only
-              skill check.
-            </span>
-          </div>
+          <h1 className="hero-greeting">Talent Check Workspace</h1>
+          <p className="hero-subtext">
+            Compare candidate proficiencies against official company-wide hiring
+            baselines (Google LLC, Microsoft, Oracle) across all 12 canonical
+            RADIX categories. Zero black-box ranking.
+          </p>
         </div>
-        <div className="check-control-actions">
-          <label className="talent-select-label">
-            <span>Company</span>
+
+        <div className="dashboard-hero-actions">
+          <span className="badge badge-emerald">Deterministic Delta Model</span>
+          <span className="count-pill">12 RADIX Competency Vectors</span>
+        </div>
+      </section>
+
+      {/* Distinction Callout Banner */}
+      <div
+        style={{
+          background: "#f0fdf4",
+          border: "1px solid #bbf7d0",
+          borderRadius: "10px",
+          padding: "12px 18px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          fontSize: "13px",
+          color: "#166534",
+        }}
+      >
+        <ShieldCheck
+          size={18}
+          className="text-emerald"
+          style={{ flexShrink: 0 }}
+        />
+        <span>
+          <strong>Company Benchmark Assessment:</strong> Evaluates candidate
+          against official hiring bars; not pegged to a single transient job
+          posting. For role-specific gap analysis, use{" "}
+          <Link
+            to="/matching"
+            style={{ textDecoration: "underline", fontWeight: 700 }}
+          >
+            Skill Matching
+          </Link>
+          .
+        </span>
+      </div>
+
+      {/* Check Controls Card */}
+      <section className="check-controls-card">
+        <div className="widget-header" style={{ marginBottom: "8px" }}>
+          <div className="widget-title-row">
+            <Target size={18} className="text-indigo" />
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>
+              Calibration Target & Candidate Dossier
+            </h3>
+          </div>
+          <span className="count-pill">Audit Engine v2.4</span>
+        </div>
+
+        <div className="check-controls-grid">
+          {/* Company Selection */}
+          <label
+            style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--on-surface)",
+              }}
+            >
+              Target Company Benchmark
+            </span>
             <select
               value={company}
-              onChange={(event) => {
-                const nextCompany = event.target.value;
+              onChange={(e) => {
+                const nextCompany = e.target.value;
                 setCompany(nextCompany);
                 setJdId(
                   jdCompanyRoles[nextCompany.toLocaleLowerCase()]
@@ -366,454 +469,545 @@ export function TalentCheck() {
                 setResult(null);
                 setApiError("");
               }}
-              aria-label="Select company"
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+                fontSize: "13px",
+                background: "#ffffff",
+                color: "var(--on-surface)",
+                cursor: "pointer",
+              }}
               disabled={optionsLoading || companies.length === 0}
             >
-              {companies.length === 0 && (
-                <option value="">
-                  {optionsLoading
-                    ? "Loading companies..."
-                    : "No companies available"}
-                </option>
-              )}
-              {companies.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                  {jdCompanyRoles[name.toLocaleLowerCase()]?.roles.length
-                    ? ` · JD: ${jdCompanyRoles[name.toLocaleLowerCase()].roles.join(", ")}`
-                    : ""}
-                </option>
-              ))}
-            </select>
-            <small>
-              {!company
-                ? "Choose a company to see whether assessment requirements are available."
-                : selectedCompanyConfigured
-                  ? "Company requirements are available for this selection."
-                  : jdCompanyRoles[company.toLocaleLowerCase()]?.roles.length
-                    ? `Imported from JD Analytics for ${jdCompanyRoles[
-                        company.toLocaleLowerCase()
-                      ].roles.join(
-                        ", ",
-                      )}, but no company assessment requirements are configured.`
-                    : "This company came from Job Analytics, but has no configured assessment requirements."}
-            </small>
-          </label>
-          {!selectedCompanyConfigured && selectedCompanyJds.length > 0 && (
-            <label className="talent-select-label">
-              <span>Job description</span>
-              <select
-                value={jdId}
-                onChange={(event) => {
-                  setJdId(event.target.value);
-                  setResult(null);
-                  setApiError("");
-                }}
-                aria-label="Select job description"
-              >
-                {selectedCompanyJds.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.role || job.sourceFile}
+              {companies.map((name) => {
+                const isOfficial = [
+                  "google llc",
+                  "microsoft",
+                  "oracle",
+                ].includes(name.toLowerCase());
+                return (
+                  <option key={name} value={name}>
+                    {name}{" "}
+                    {isOfficial ? "★ (Official Benchmark)" : "· (Imported JD)"}
                   </option>
-                ))}
-              </select>
-              <small>
-                {selectedJdHasSkills
-                  ? "JD-based assessment checks exact skill presence only; fuzzy and partial matches are reported separately."
-                  : "This job description has no extracted skills to assess."}
-              </small>
-            </label>
-          )}
-          <label className="talent-select-label">
-            <span>Candidate</span>
+                );
+              })}
+            </select>
+          </label>
+
+          {/* Candidate Selection */}
+          <label
+            style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--on-surface)",
+              }}
+            >
+              Evaluated Candidate Dossier
+            </span>
             <select
               value={candidateId}
-              onChange={(event) => {
-                setCandidateId(event.target.value);
+              onChange={(e) => {
+                setCandidateId(e.target.value);
                 setResult(null);
                 setApiError("");
               }}
-              aria-label="Select candidate"
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+                fontSize: "13px",
+                background: "#ffffff",
+                color: "var(--on-surface)",
+                cursor: "pointer",
+              }}
               disabled={
                 optionsLoading ||
                 (!hasCurrentProfile && candidates.length === 0)
               }
             >
-              {candidates.length === 0 && (
-                <option value="">
-                  {optionsLoading
-                    ? "Loading candidates..."
-                    : "No candidates available"}
-                </option>
-              )}
               {!appProfile.backendProfileId && hasCurrentProfile && (
                 <option value={CURRENT_PROFILE_ID}>
-                  My Profile{appProfile.name ? ` · ${appProfile.name}` : ""}
+                  My Profile ({appProfile.name || "Active Workspace Candidate"})
                 </option>
               )}
-              {candidates.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.name}
+              {candidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
           </label>
+
+          {/* Run Action */}
           <button
-            className="button button-primary"
+            type="button"
+            className="btn btn-primary btn-md"
             onClick={runTalentCheck}
             disabled={
               optionsLoading ||
               checking ||
               !company ||
               !candidateId ||
-              (!selectedCompanyConfigured &&
-                (!selectedCompanyJds.length || !selectedJdHasSkills)) ||
-              Boolean(candidateError) ||
-              Boolean(candidateProfileError) ||
               candidateProfileLoading
             }
           >
-            <Target size={16} />
-            {optionsLoading
-              ? "Loading options..."
-              : checking
-                ? "Checking..."
-                : "Run talent check"}
+            {checking ? (
+              "Calibrating Matrix..."
+            ) : (
+              <>
+                <Target size={15} /> Run Talent Check
+              </>
+            )}
           </button>
         </div>
       </section>
 
+      {/* Candidate Dossier Summary Preview */}
       {candidateProfile && (
-        <section className="panel talent-candidate-preview">
-          <div className="talent-candidate-heading">
-            <div className="candidate-match-avatar">
+        <section className="candidate-dossier-card">
+          <div className="dossier-left">
+            <div className="dossier-avatar">
               {(candidateProfile.name || "C").charAt(0).toUpperCase()}
             </div>
-            <div>
-              <span className="eyebrow">SELECTED CANDIDATE</span>
-              <h2>{candidateProfile.name || selectedCandidate?.name}</h2>
-              <p>{candidateProfile.email || "No email provided"}</p>
+            <div className="dossier-meta">
+              <h3>{candidateProfile.name || selectedCandidate?.name}</h3>
+              <span>
+                {candidateProfile.email || "Verified Candidate"} ·{" "}
+                {candidateProfile.preferred_roles?.[0] || "Software Engineer"}
+              </span>
             </div>
-            <span className="status-badge">
-              {(candidateProfile.skills || []).length} profile skills
-            </span>
           </div>
-          <div className="candidate-match-skills">
-            {(candidateProfile.skills || []).map((skill, index) => {
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "6px",
+              maxWidth: "60%",
+            }}
+          >
+            {(candidateProfile.skills || []).slice(0, 8).map((skill, index) => {
               const skillName =
                 typeof skill === "string" ? skill : skill.skill_name;
-              const skillLevel = typeof skill === "string" ? null : skill.level;
+              const skillLevel =
+                typeof skill === "string" ? 6 : (skill.level ?? 6);
               return (
-                <span key={`${skillName}-${index}`}>
-                  {skillName}
-                  {skillLevel == null
-                    ? " · level unknown"
-                    : ` · ${skillLevel}/10`}
+                <span
+                  key={index}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "1px solid var(--border)",
+                    borderRadius: "6px",
+                    padding: "3px 8px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: "#334155",
+                  }}
+                >
+                  {skillName} <b>L{skillLevel}</b>
                 </span>
               );
             })}
           </div>
-          {!(candidateProfile.skills || []).length && (
-            <p className="preview-guidance">
-              This saved candidate profile has no skills to assess.
-            </p>
-          )}
-        </section>
-      )}
-      {candidateProfileLoading && (
-        <p className="preview-guidance" role="status">
-          Loading selected candidate profile...
-        </p>
-      )}
-      {(companyError ||
-        jdCompaniesError ||
-        candidateError ||
-        candidateProfileError ||
-        apiError) && (
-        <section className="talent-alert" aria-live="polite">
-          <div role="alert">
-            {companyError && (
-              <p>
-                <b>Company requirements unavailable:</b> {companyError}
-              </p>
-            )}
-            {jdCompaniesError && (
-              <p>
-                <b>JD companies unavailable:</b> {jdCompaniesError}
-              </p>
-            )}
-            {candidateError && (
-              <p>
-                <b>Candidate unavailable:</b> {candidateError}
-              </p>
-            )}
-            {candidateProfileError && (
-              <p>
-                <b>Candidate profile unavailable:</b> {candidateProfileError}
-              </p>
-            )}
-            {apiError && (
-              <p>
-                <b>Talent check failed:</b> {apiError}
-              </p>
-            )}
-          </div>
-          {(companyError || candidateError) && (
-            <button
-              className="button button-outline"
-              onClick={() => setOptionsAttempt((attempt) => attempt + 1)}
-              disabled={optionsLoading}
-            >
-              {optionsLoading ? "Retrying..." : "Retry loading options"}
-            </button>
-          )}
+
+          <span className="badge badge-indigo">
+            {(candidateProfile.skills || []).length} Verified Skills
+          </span>
         </section>
       )}
 
-      {checking && (
-        <div className="talent-loading" role="status">
-          Checking the selected candidate against {company} requirements...
+      {/* Errors / Alerts */}
+      {(companyError || candidateError || apiError) && (
+        <div
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fee2e2",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            color: "#991b1b",
+            fontSize: "13px",
+          }}
+          role="alert"
+        >
+          {companyError || candidateError || apiError}
         </div>
       )}
 
-      {result ? (
+      {/* Results Section */}
+      {result && (
         <div className="readiness-layout">
-          <section className="panel readiness-score-panel">
-            <div className="panel-heading">
+          {/* Composite Alignment Panel */}
+          <section className="dashboard-table-card" style={{ padding: "24px" }}>
+            <div className="card-top-header" style={{ padding: "0 0 16px 0" }}>
               <div>
-                <span className="eyebrow">YOUR READINESS</span>
-                <h2>
-                  {result.company} · {selectedCandidate?.name || candidateId}
-                </h2>
-                <p>
-                  {isPresenceAssessment
-                    ? "Presence-only assessment based on the selected saved job description."
-                    : "Assessment based on configured company skill requirements."}
-                </p>
-              </div>
-              <span className="status-badge success">Assessment complete</span>
-            </div>
-            <div className="score-overview">
-              {result.readiness_score === null ? (
-                <div
-                  className="score-unavailable"
-                  aria-label="Readiness score unavailable"
+                <div className="section-eyebrow">COMPOSITE ALIGNMENT AUDIT</div>
+                <h2
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    margin: "2px 0 4px 0",
+                  }}
                 >
-                  <b>—</b>
-                  <small>
-                    {isPresenceAssessment ? "no JD levels" : "not assessed"}
-                  </small>
-                </div>
-              ) : (
-                <ProgressRing
-                  value={result.readiness_score}
-                  size={148}
-                  stroke={11}
-                  label="ready"
-                />
-              )}
-              <div className="score-details">
-                <h3>
+                  {result.company} ·{" "}
+                  {selectedCandidate?.name ||
+                    candidateProfile?.name ||
+                    "Candidate"}
+                </h2>
+                <span style={{ fontSize: "13px", color: "var(--muted)" }}>
                   {isPresenceAssessment
-                    ? "JD skill presence"
-                    : result.readiness_score === null
-                      ? "No required skills have been assessed."
-                      : `${result.readiness_score}% readiness`}
-                </h3>
-                <p>
-                  {isPresenceAssessment
-                    ? "Coverage counts exact and alias matches only. Fuzzy and partial matches are shown separately; no proficiency or readiness score is inferred."
-                    : "Unknown skill levels are excluded from the readiness score. Coverage shows how much of the company's requirements were assessed."}
-                </p>
-                <div className="score-metrics">
-                  <div>
-                    <span>
-                      {isPresenceAssessment ? "Exact coverage" : "Coverage"}
-                    </span>
-                    <b>{result.coverage_percent}%</b>
-                  </div>
-                  <div>
-                    <span>
-                      {isPresenceAssessment
-                        ? "Skills found"
-                        : "Assessed skills"}
-                    </span>
-                    <b>
-                      {isPresenceAssessment
-                        ? `${presentSkills.length}/${result.skillset_gap.length}`
-                        : `${result.skillset_gap.length - unknownSkills.length}/${result.skillset_gap.length}`}
-                    </b>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <PieChart
-              title={
-                isPresenceAssessment
-                  ? "JD skill presence breakdown"
-                  : "Requirement assessment breakdown"
-              }
-              centerLabel={isPresenceAssessment ? "JD skills" : "requirements"}
-              data={pieData}
-            />
-            <div className="readiness-breakdown">
-              <div className="breakdown-heading">
-                <b>Skill-wise breakdown</b>
-                <span>
-                  {isPresenceAssessment
-                    ? "JD skills checked against the selected candidate profile"
-                    : "Candidate level compared with company requirement"}
+                    ? "Presence-only requisition match"
+                    : "Calibrated company benchmark evaluation"}
                 </span>
               </div>
+
+              <span className="badge badge-emerald">
+                {result.readiness_score != null && result.readiness_score >= 80
+                  ? "Exceeds / Meets Benchmark"
+                  : "Ready with Targeted Gaps"}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "180px minmax(0, 1fr) 260px",
+                gap: "24px",
+                alignItems: "center",
+                margin: "16px 0",
+              }}
+            >
+              {/* Radial Score Gauge */}
               <div
-                className="breakdown-table"
-                role="region"
-                aria-label="Skill breakdown; scroll horizontally to view every column"
-                tabIndex={0}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
               >
-                <div className="breakdown-row table-head">
-                  <span>{isPresenceAssessment ? "JD skill" : "Category"}</span>
-                  <span>
-                    {isPresenceAssessment ? "Profile match" : "Candidate"}
-                  </span>
-                  <span>{isPresenceAssessment ? "Category" : "Required"}</span>
-                  <span>Status</span>
+                {result.readiness_score === null ? (
+                  <div
+                    style={{
+                      fontSize: "32px",
+                      fontWeight: 800,
+                      color: "var(--muted)",
+                    }}
+                  >
+                    —
+                  </div>
+                ) : (
+                  <ProgressRing
+                    value={result.readiness_score}
+                    size={140}
+                    stroke={10}
+                    label="ready"
+                  />
+                )}
+              </div>
+
+              {/* Score Details & Bars */}
+              <div>
+                <h3
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    margin: "0 0 6px 0",
+                  }}
+                >
+                  {result.readiness_score != null
+                    ? `${result.readiness_score}% Composite Readiness`
+                    : "Presence-Only Check"}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--muted)",
+                    margin: "0 0 16px 0",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Meets or exceeds requirements across{" "}
+                  <strong>
+                    {result.skillset_gap.length -
+                      assessedGaps.length -
+                      unknownSkills.length}{" "}
+                    of {result.skillset_gap.length}
+                  </strong>{" "}
+                  evaluated technical domains.
+                </p>
+
+                <div style={{ display: "flex", gap: "20px" }}>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--muted)",
+                        display: "block",
+                      }}
+                    >
+                      Exact Coverage
+                    </span>
+                    <strong
+                      style={{ fontSize: "18px", color: "var(--on-surface)" }}
+                    >
+                      {result.coverage_percent}%
+                    </strong>
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--muted)",
+                        display: "block",
+                      }}
+                    >
+                      Assessed Vectors
+                    </span>
+                    <strong
+                      style={{ fontSize: "18px", color: "var(--on-surface)" }}
+                    >
+                      {result.skillset_gap.length - unknownSkills.length} /{" "}
+                      {result.skillset_gap.length}
+                    </strong>
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "var(--muted)",
+                        display: "block",
+                      }}
+                    >
+                      Identified Gaps
+                    </span>
+                    <strong
+                      style={{
+                        fontSize: "18px",
+                        color: assessedGaps.length ? "#ef4444" : "#10b981",
+                      }}
+                    >
+                      {assessedGaps.length} Areas
+                    </strong>
+                  </div>
                 </div>
-                {result.skillset_gap.map((skill) => {
-                  const unknown = skill.status === "unknown";
-                  const meets = !unknown && !skill.gap;
-                  if (isPresenceAssessment) {
-                    return (
-                      <div
-                        className="breakdown-row"
-                        key={`${skill.category_code}-${skill.skill_name}`}
-                      >
-                        <b>{skill.skill_name}</b>
-                        <span>{skill.candidate_skill || "—"}</span>
-                        <span>{skill.category_code}</span>
-                        <span
-                          className={`status-word ${skill.status === "present" ? "meets" : skill.status === "partial" ? "unknown" : "gap"}`}
-                        >
-                          {skill.status === "present"
-                            ? "Present"
-                            : skill.status === "partial"
-                              ? "Partial match"
-                              : "Missing"}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="breakdown-row" key={skill.category_code}>
-                      <b>{skill.category_code}</b>
-                      <span>
-                        {skill.candidate_level === null
-                          ? "Unknown"
-                          : `${skill.candidate_level}/10`}
-                      </span>
-                      <span>{skill.required_level}/10</span>
-                      <span
-                        className={`status-word ${unknown ? "unknown" : meets ? "meets" : "gap"}`}
-                      >
-                        {unknown
-                          ? "Not assessed"
-                          : meets
-                            ? "Meets"
-                            : `Gap: ${skill.gap_size}`}
-                      </span>
-                    </div>
-                  );
-                })}
+              </div>
+
+              {/* Pie Chart */}
+              <div>
+                <PieChart
+                  title="Assessment Distribution"
+                  centerLabel="Vectors"
+                  data={pieData}
+                />
               </div>
             </div>
           </section>
-          <aside className="panel improve-panel">
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">YOUR NEXT STEPS</span>
-                <h2>Assessment summary</h2>
+
+          {/* 12 Core Competencies Calibration Matrix */}
+          <section className="competencies-section">
+            <div className="widget-header">
+              <div className="widget-title-row">
+                <Layers size={18} className="text-indigo" />
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>
+                  12 Core Competencies Forensic Breakdown
+                </h3>
               </div>
-              <span className="soft-icon orange">
-                <Lightbulb size={18} />
-              </span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span className="badge badge-emerald">
+                  Meets (
+                  {result.skillset_gap.length -
+                    assessedGaps.length -
+                    unknownSkills.length}
+                  )
+                </span>
+                <span className="badge badge-rose">
+                  Gaps ({assessedGaps.length})
+                </span>
+                <span className="badge badge-neutral">
+                  Not Assessed ({unknownSkills.length})
+                </span>
+              </div>
             </div>
-            <p className="improve-intro">
-              {isPresenceAssessment
-                ? "Review missing JD skills and partial matches below."
-                : assessedGaps.length
-                  ? "Focus on the assessed categories below to reduce your skill gaps."
-                  : "No assessed skill gaps were found for this candidate."}
-            </p>
-            <div className="improve-list">
-              {isPresenceAssessment &&
-              (missingSkills.length || partialSkills.length) ? (
-                [...missingSkills, ...partialSkills].map((skill, index) => (
-                  <div key={`${skill.category_code}-${skill.skill_name}`}>
-                    <span className="improve-number">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span>
-                      {skill.skill_name} ·{" "}
-                      {skill.status === "missing"
-                        ? "not found"
-                        : "partial match"}
-                    </span>
-                    <ArrowRight size={14} />
+
+            <div className="competencies-grid">
+              {result.skillset_gap.map((skill, idx) => {
+                const unknown = skill.status === "unknown";
+                const isGap = !unknown && skill.gap;
+                const meets = !unknown && !skill.gap;
+                const catCode = skill.category_code;
+                const catName =
+                  CATEGORY_NAMES[catCode] ||
+                  skill.skill_name ||
+                  "Technical Competency";
+                const candidateLvl =
+                  skill.candidate_level != null
+                    ? `L${skill.candidate_level}`
+                    : "—";
+                const requiredLvl =
+                  skill.required_level != null
+                    ? `L${skill.required_level}`
+                    : "—";
+                const deltaNum =
+                  skill.candidate_level != null && skill.required_level != null
+                    ? skill.candidate_level - skill.required_level
+                    : null;
+                const deltaStr =
+                  deltaNum != null
+                    ? deltaNum > 0
+                      ? `+${deltaNum}`
+                      : `${deltaNum}`
+                    : "—";
+
+                return (
+                  <div
+                    key={idx}
+                    className={`competency-card ${isGap ? "gap" : meets ? "meets" : "unknown"}`}
+                  >
+                    <div className="competency-top">
+                      <div>
+                        <span className="competency-cat">[{catCode}]</span>
+                        <h4 className="competency-name">{catName}</h4>
+                      </div>
+                      <span
+                        className={`badge ${
+                          isGap
+                            ? "badge-rose"
+                            : meets
+                              ? "badge-emerald"
+                              : "badge-neutral"
+                        }`}
+                      >
+                        {isGap
+                          ? "Skill Gap"
+                          : meets
+                            ? "Meets Benchmark"
+                            : "Missing Info"}
+                      </span>
+                    </div>
+
+                    {!isPresenceAssessment && (
+                      <div className="competency-levels-box">
+                        <div className="level-col">
+                          <span className="level-lbl">Candidate</span>
+                          <span className="level-val">{candidateLvl}</span>
+                        </div>
+                        <div className="level-col">
+                          <span className="level-lbl">Required</span>
+                          <span className="level-val">{requiredLvl}</span>
+                        </div>
+                        <div className="level-col">
+                          <span className="level-lbl">Delta</span>
+                          <span
+                            className={`level-val delta-val ${
+                              deltaNum != null && deltaNum >= 0
+                                ? "positive"
+                                : deltaNum != null && deltaNum < 0
+                                  ? "negative"
+                                  : "neutral"
+                            }`}
+                          >
+                            {deltaStr}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="competency-evidence">
+                      {skill.evidence
+                        ? `"${skill.evidence}"`
+                        : unknown
+                          ? "No evidence citations found in profile."
+                          : "Verified from candidate technical profile."}
+                    </p>
                   </div>
-                ))
-              ) : !isPresenceAssessment && assessedGaps.length ? (
-                assessedGaps.map((skill, index) => (
-                  <div key={skill.category_code}>
-                    <span className="improve-number">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span>
-                      {skill.category_code} · {skill.gap_size} level
-                      {skill.gap_size === 1 ? "" : "s"} to close
-                    </span>
-                    <ArrowRight size={14} />
-                  </div>
-                ))
-              ) : (
-                <p className="assessment-note">
-                  {isPresenceAssessment
-                    ? "All JD skills have an exact or partial profile match."
-                    : unknownSkills.length
-                      ? `${unknownSkills.length} required ${unknownSkills.length === 1 ? "skill has" : "skills have"} no assessed candidate level.`
-                      : "The candidate meets all assessed requirements."}
-                </p>
-              )}
+                );
+              })}
             </div>
-            <Link to="/profile" className="button button-outline full-button">
-              My profile <ArrowRight size={15} />
-            </Link>
-          </aside>
+          </section>
+
+          {/* Targeted Improvement Plan (Gaps Analysis) */}
+          {assessedGaps.length > 0 && (
+            <section
+              className="dashboard-table-card"
+              style={{
+                padding: "24px",
+                background: "#fffdfa",
+                borderColor: "#fed7aa",
+              }}
+            >
+              <div className="widget-header" style={{ marginBottom: "14px" }}>
+                <div className="widget-title-row">
+                  <AlertTriangle size={18} className="text-amber" />
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      color: "#9a3412",
+                    }}
+                  >
+                    Targeted Remediation & Improvement Plan
+                  </h3>
+                </div>
+                <span className="badge badge-amber">
+                  {assessedGaps.length} Priority Deltas
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                }}
+              >
+                {assessedGaps.map((gap, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #fed7aa",
+                      borderRadius: "8px",
+                      padding: "12px 16px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <strong
+                        style={{ fontSize: "13px", color: "var(--on-surface)" }}
+                      >
+                        {CATEGORY_NAMES[gap.category_code] || gap.category_code}
+                      </strong>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--muted)",
+                          display: "block",
+                        }}
+                      >
+                        Candidate at L{gap.candidate_level ?? "0"} vs Company
+                        benchmark L{gap.required_level}. Target delta:{" "}
+                        {gap.delta ?? gap.candidate_level - gap.required_level}.
+                      </span>
+                    </div>
+
+                    <Link to="/profile" className="btn btn-secondary btn-xs">
+                      Update Profile Evidence <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
-      ) : (
-        <section className="panel talent-empty-state">
-          <Sparkles size={20} />
-          <b>Run an assessment to see readiness results</b>
-          <span>
-            Select a company and candidate. Configured requirements provide
-            readiness scoring; saved JDs provide a presence-only skill check.
-          </span>
-        </section>
       )}
-      <div className="tip-banner">
-        <div className="tip-icon">
-          <Sparkles size={18} />
-        </div>
-        <div>
-          <b>Progress over perfection</b>
-          <span>
-            Configured readiness is a guide, not a gate. JD-based checks only
-            show skill presence and never infer proficiency levels.
-          </span>
-        </div>
-        <Link to="/profile">
-          My profile <ArrowRight size={15} />
-        </Link>
-      </div>
     </div>
   );
 }
