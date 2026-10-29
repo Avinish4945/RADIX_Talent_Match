@@ -16,10 +16,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { signOut, updateProfile } from "../../application/store/appSlice";
-import {
-  getLatestProfileFromApi,
-  getProfileByIdFromApi,
-} from "../../infrastructure/api/profileApi";
+import { getProfileByIdFromApi } from "../../infrastructure/api/profileApi";
 
 const links = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -65,9 +62,7 @@ export function AppShell() {
         if (savedId) {
           profileData = await getProfileByIdFromApi(savedId);
         }
-        if (!profileData) {
-          profileData = await getLatestProfileFromApi();
-        }
+        // Do not fall back to /profiles/latest: it is global, not user-scoped.
         if (active && profileData && profileData.name) {
           let eduStr = profileData.education;
           let univStr = profileData.university;

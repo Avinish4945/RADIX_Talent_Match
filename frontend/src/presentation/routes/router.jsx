@@ -26,7 +26,7 @@ export function createAppRouter({ isAuthenticated }) {
       },
       {
         path: "/",
-        // loader: requireAuth,
+        loader: requireAuth,
         element: <AppShell />,
         children: [
           { index: true, loader: () => redirect("/dashboard") },
@@ -37,7 +37,6 @@ export function createAppRouter({ isAuthenticated }) {
           {
             path: "talent-check",
             element: <TalentCheck />,
-            // loader: requireAuth,
           },
           { path: "matching", element: <SkillMatching /> },
         ],

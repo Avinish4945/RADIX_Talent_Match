@@ -67,6 +67,7 @@ export function ProfileBuilder() {
     dispatch(updateProfile(localUpdates));
 
     const payload = {
+      id: profile.profileId || profile.id || undefined,
       name,
       email,
       role,

@@ -23,7 +23,7 @@ def test_create_profile_returns_saved_id(monkeypatch):
     monkeypatch.setattr(
         profile_routes.profile_service,
         "save_profile",
-        lambda _profile: "profile-123",
+        lambda _profile, **_kwargs: "profile-123",
     )
 
     response = CLIENT.post(
@@ -39,7 +39,7 @@ def test_create_profile_returns_saved_id(monkeypatch):
 
 
 def test_create_profile_does_not_expose_internal_errors(monkeypatch):
-    def fail_to_save(_profile):
+    def fail_to_save(_profile, **_kwargs):
         raise RuntimeError("database credentials leaked")
 
     monkeypatch.setattr(profile_routes.profile_service, "save_profile", fail_to_save)
@@ -67,31 +67,35 @@ def test_get_profile_returns_404_when_profile_is_missing(monkeypatch):
     assert response.json() == {"detail": "Profile not found"}
 
 
-def test_get_latest_profile_returns_saved_profile(monkeypatch):
-    monkeypatch.setattr(
-        profile_routes.profile_service,
-        "get_latest_profile",
-        lambda: {"id": "latest-123", "name": "Latest User", "skills": ["Python"]},
-    )
+def test_create_profile_with_existing_id_updates(monkeypatch):
+    observed = {}
 
-    response = CLIENT.get("/api/profiles/latest")
+    def fake_save(profile, profile_id=None):
+        observed["profile_id"] = profile_id
+        return profile_id or "profile-123"
+
+    monkeypatch.setattr(profile_routes.profile_service, "save_profile", fake_save)
+
+    response = CLIENT.post(
+        "/api/profiles",
+        json={"id": "existing-456", "name": "Existing User", "email": "user@example.test"},
+    )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "id": "latest-123",
-        "name": "Latest User",
-        "skills": ["Python"],
-    }
+    assert response.json() == {"id": "existing-456", "message": "Profile saved successfully"}
+    assert observed["profile_id"] == "existing-456"
 
 
-def test_get_latest_profile_returns_404_when_none_exists(monkeypatch):
-    monkeypatch.setattr(
-        profile_routes.profile_service,
-        "get_latest_profile",
-        lambda: None,
+def test_create_profile_with_stale_id_returns_404(monkeypatch):
+    def fail_stale(_profile, profile_id=None):
+        raise LookupError("Profile ID was not found; reload the profile before saving")
+
+    monkeypatch.setattr(profile_routes.profile_service, "save_profile", fail_stale)
+
+    response = CLIENT.post(
+        "/api/profiles",
+        json={"id": "stale-789", "name": "Stale User", "email": "stale@example.test"},
     )
 
-    response = CLIENT.get("/api/profiles/latest")
-
     assert response.status_code == 404
-    assert response.json() == {"detail": "No profile found"}
+    assert "Profile ID was not found" in response.json()["detail"]

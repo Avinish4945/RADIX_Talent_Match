@@ -1,12 +1,8 @@
 {
   "_metadata": {
-    "official": true,
-    "purpose": "Company skill requirements verified against organizer-provided benchmark job descriptions for Google LLC, Microsoft, and Oracle, with synthetic development fixtures explicitly distinguished.",
-    "verified_benchmarks": [
-      "Google LLC",
-      "Microsoft",
-      "Oracle"
-    ],
+    "official": false,
+    "purpose": "Provisional mappings based on listed job-description PDFs; category and proficiency levels require traceable evidence and review.",
+    "verified_benchmarks": [],
     "synthetic_fixtures": [
       "Example Company"
     ],
@@ -15,7 +11,9 @@
       "Microsoft": "data/Microsoft - Software Engineer.pdf and data/Microsoft - Data Analyst.pdf",
       "Oracle": "data/Oracle - Associate Software Engineer.pdf and data/Oracle - Application Support Analyst.pdf"
     },
-    "synthetic_disclaimer": "Example Company is an explicitly synthetic test fixture retained for backwards compatibility and regression tests. It is not an official partner requirement."
+    "synthetic_disclaimer": "Example Company is an explicitly synthetic test fixture retained for backwards compatibility and regression tests. It is not an official partner requirement.",
+    "status": "provisional_mapping_requires_human_verification",
+    "verification_note": "PDF filenames alone do not prove each category/level mapping. Confirm each requirement against the source and organizer brief."
   },
   "companies": {
     "Google LLC": [

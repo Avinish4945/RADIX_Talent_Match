@@ -49,10 +49,11 @@ def test_official_company_skillsets_fixture():
     fixture = root / "data" / "talent_check_company_skillsets.json"
     payload = json.loads(fixture.read_text(encoding="utf-8"))
 
-    assert payload["_metadata"]["official"] is True
+    assert payload["_metadata"]["official"] is False
+    assert payload["_metadata"]["status"] == "provisional_mapping_requires_human_verification"
     assert "Google LLC" in payload["companies"]
     assert "Microsoft" in payload["companies"]
     assert "Oracle" in payload["companies"]
     assert "Example Company" in payload["companies"]
     assert "Example Company" in payload["_metadata"]["synthetic_fixtures"]
-    assert "Google LLC" in payload["_metadata"]["verified_benchmarks"]
+    assert payload["_metadata"]["verified_benchmarks"] == []

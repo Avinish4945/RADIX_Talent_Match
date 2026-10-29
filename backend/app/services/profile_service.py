@@ -3,11 +3,16 @@ from app.schemas.profile import CandidateProfile
 from app.services.supabase_client import supabase
 
 
-def save_profile(profile: CandidateProfile) -> str:
-    """Save the candidate profile into Supabase profiles table and return the generated ID."""
-    dump = profile.model_dump()
-    response = supabase.table("profiles").insert({"profile_data": dump}).execute()
-
+def save_profile(profile: CandidateProfile, profile_id: Optional[str] = None) -> str:
+    """Create a profile or update its existing row to avoid duplicate records."""
+    dump = profile.model_dump(exclude={"id"})
+    table = supabase.table("profiles")
+    if profile_id:
+        response = table.update({"profile_data": dump}).eq("id", profile_id).execute()
+        if response.data:
+            return str(response.data[0]["id"])
+        raise LookupError("Profile ID was not found; reload the profile before saving")
+    response = table.insert({"profile_data": dump}).execute()
     if response.data:
         return str(response.data[0]["id"])
     raise RuntimeError("Failed to save profile to database")
